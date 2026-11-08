@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Contrôle Sécurité</title>
+<style>
+/* Présentation générale de Contrôle Sécurité. */
+:root{--bg:#f5f6f8;--card:#fff;--tx:#1c2430;--mu:#6b7684;--bd:#dde1e7;--ac:#1f5fbf;--ok:#1e8e4e;--ko:#d23b3b;--na:#8a93a0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14181e;--card:#1e242c;--tx:#e9edf2;--mu:#98a2b0;--bd:#323a45;--ac:#6aa3f5;--ok:#4cc27f;--ko:#f06b6b;--na:#8a93a0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14181e;--card:#1e242c;--tx:#e9edf2;--mu:#98a2b0;--bd:#323a45;--ac:#6aa3f5;--ok:#4cc27f;--ko:#f06b6b;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:640px;margin:0 auto;padding:14px}
+h1{font-size:20px;margin:4px 0 12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:12px}
+label{display:block;font-size:12px;color:var(--mu);margin:8px 0 3px}
+input,textarea,select{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:9px}
+textarea{min-height:60px;resize:vertical}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.sum{display:flex;gap:8px;margin-bottom:12px}
+.sum div{flex:1;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:8px;text-align:center;font-size:12px;color:var(--mu)}
+.sum b{display:block;font-size:22px;color:var(--tx)}
+.ad{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ad input{font-weight:600;border:none;background:transparent;padding:4px 0}
+.pt{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd)}
+.st{min-width:104px;border:0;border-radius:20px;padding:8px 12px;font:inherit;font-weight:600;color:#fff;background:var(--na);cursor:pointer}
+.st.ok{background:var(--ok)}.st.ko{background:var(--ko)}.st.empty{background:transparent;color:var(--mu);border:1px dashed var(--bd)}
+button.b{font:inherit;background:var(--card);color:var(--ac);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;cursor:pointer}
+button.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+.et{display:flex;align-items:center;gap:8px;padding:0 0 8px;font-size:14px}
+.et span{flex:1}
+.et input{width:110px;padding:6px 8px}
+.dt{padding-bottom:10px}
+.an{padding:2px 0 10px;display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:14px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:16px;padding:6px 11px;cursor:pointer}
+.chip.on{background:var(--ko);border-color:var(--ko);color:#fff}
+.chip.add{color:var(--ac);border-style:dashed}
+.chip.ex.on{background:var(--ac);border-color:var(--ac);color:#fff}
+@media print{.chip:not(.on){display:none}}
+.x{background:none;border:0;color:var(--mu);font-size:20px;cursor:pointer}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 24px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:8px 14px;border-radius:20px;opacity:0;transition:.2s;pointer-events:none}
+#toast.on{opacity:1}
+#rep{position:fixed;inset:0;background:#fff;color:#000;overflow:auto;padding:calc(14px + env(safe-area-inset-top,0px)) 14px calc(30px + env(safe-area-inset-bottom,0px));z-index:20}
+#rep[hidden]{display:none}
+.rbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+#gate{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+#gate[hidden]{display:none}
+.gbox{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:22px;max-width:320px;width:100%;text-align:center}
+#gcode{text-transform:uppercase;font-size:28px;text-align:center;letter-spacing:8px;margin:10px 0}
+#gerr{color:var(--ko);min-height:20px;font-size:14px}
+.hint{font-size:12px;color:#666}
+@media print{body.printing main{display:none}body.printing #rep{position:static;padding:0;overflow:visible}.rbar,.hint{display:none}}
+@media print{.bar,.x,.noprint{display:none}body{background:#fff;color:#000}.card{break-inside:avoid}}
+
+</style></head><body><main>
+<h1>Contrôle sécurité</h1>
+<div class="card">
+  <div class="row"><div><label>Secteur</label><input id="secteur"></div><div><label>Date</label><input id="date" type="date"></div></div>
+  <label>Gardien(ne) contrôlé(e)</label><select id="gardien"></select>
+</div>
+<div class="sum"><div><b id="nOk">0</b>OK</div><div><b id="nKo">0</b>Anomalies</div><div><b id="nTodo">0</b>À contrôler</div></div>
+<div id="list"></div>
+<div class="bar">
+  <button class="b" id="addAd">Adresses</button>
+  <button class="b" id="addPt">Points de contrôle / anomalies</button>
+  <button class="b" id="guardiansBtn" hidden>Gardiens</button>
+  <button class="b p" id="send">Envoyer le PDF au responsable</button>
+  <label class="hint" style="display:flex;gap:6px;align-items:center;width:100%;margin:0"><input type="checkbox" id="rPh0" style="width:auto"> Inclure les photos dans le PDF</label>
+  <label class="hint" style="display:flex;gap:6px;align-items:center;width:100%;margin:0"><input type="checkbox" id="onlyAnom" style="width:auto"> Afficher seulement les anomalies</label>
+  <button class="b" id="copy">Copier le rapport</button>
+  <button class="b" id="print">Aperçu / Imprimer</button>
+  <button class="b" id="admBtn" hidden>Rapports des gardiens</button>
+  <button class="b" id="codesBtn" hidden>Codes d’accès</button>
+  <button class="b" id="manageBtn" hidden>Gestion des adresses et gardiens</button>
+  <button class="b" id="historyBtn" hidden>Historique des contrôles</button>
+  <button class="b" id="lock">Verrouiller</button>
+  <button class="b" id="reset">Nouveau contrôle</button>
+</div>
+<div id="gate"><div class="gbox"><h1>Contrôle sécurité</h1><p>Entrez votre code d’accès</p><input id="gcode" type="text" inputmode="text" autocapitalize="characters" maxlength="4" autocomplete="off"><button class="b p" id="gok">Entrer</button><p id="gerr"></p></div></div>
+<div id="rep" hidden></div>
+<input type="file" id="phFile" accept="image/*" hidden>
+<div id="toast"></div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+/*
+ * CONTRÔLE SÉCURITÉ — application principale
+ * Organisation du fichier :
+ * 1. Configuration et référentiels (statuts, anomalies, étages)
+ * 2. Modèle de données et persistance locale
+ * 3. Gestion des accès et rôles
+ * 4. Contrôles, adresses et gardiens
+ * 5. Administration des points/anomalies et ordre d'affichage
+ * 6. Rapports, impression et export PDF
+ * 7. Initialisation et branchement des événements
+ *
+ * Règle de maintenance : ne pas créer de seconde liste concurrente.
+ * orderedPoints() est la source d'ordre pour le contrôle et les rapports.
+ * Les réglages individuels d'étage sont portés par chaque anomalie.
+ * La clé locale KEY identifie les données conservées sur cet appareil.
+ */
+
+var KEY="controle-securite-v2";
+var ORDER=["","ok","ko","na"],LAB={"":"À contrôler",ok:"OK",ko:"Anomalie",na:"N/A",nx:"Inexistante"};
+var ANO={
+"Ascenseurs":["En panne","Miroir manquant","Bouton d’appel cassé","Éclairage HS","Porte bloquée","Écran d’affichage de l’étage","Bruit anormal","Décalage de niveau à l’arrêt avec le plancher de plus de 2 cm","Téléalarme HS","Capteur de fermeture des portes HS","Manque consigne de sécurité","Manque numéro de téléphone de l’assistance","Manque l’information charge maximum autorisée","Visite technique de plus de 6 semaines"],
+"Portes d’entrée immeubles":["Ferme-porte HS","Butée manquante / cassée","Porte ouverte","Vitre cassée","Bouton d’ouverture mauvais état / cassé","Ventouse cassée"],
+"Porte coupe-feu":["Vantail","Paumelles","Joints","Ferme-porte","Serrure","Fermeture"],
+"Colonnes sèches":["Accès obstrué","Capuchon manquant","Chaînette manquante","Signalétique manquante","Dégradée / vandalisée","Local inaccessible","Étiquette de maintenance absente","Maintenance de plus de 12 mois"],
+"Encombrants":["Hall / palier encombré","Local OM encombré"],
+"Gaines":["Porte de gaine ouverte","Serrure manquante","Gaine encombrée","Dépôts dans la gaine"],
+"Skydome":["Ouvert","Vitre cassée","Infiltration","Encrassé"],
+"Trappe d’accès à la toiture":["Ouverte","Échelle manquante","Échelle cassée","Cadenas cassé ou absent","Accès obstrué"],
+"BAES":["Ne s’allume pas","Voyant éteint / rouge","Manquant","Arraché / dégradé","Batterie HS"],
+"Hall, palier et escalier":["Nez de marche","Marche","Rampe","Garde-corps"],
+"Façade d’immeuble":["Épaufrure","Balcon encombré","Garde-corps de balcon cassé","Volet cassé","Objet saillant","Marche / escalier accès immeuble"],
+"Électricité":["Plafonnier / globe","Prise","Interrupteur"],
+"Plan de sécurité incendie":["Absent","Cassé / vandalisé"],
+"Plan évacuation incendie":["Absent","Cassé / vandalisé"]};
+var ETONLY={"Ascenseurs":["Porte bloquée","Bouton d’appel cassé","Écran d’affichage de l’étage"]};
+var TR="Trappe d’accès à la toiture";
+function ev(a,p){var v=a.st[p]||"";if(p===TR){var e=a.ex&&a.ex[p];if(e==="Inexistante")return"nx";if(!e)return""}return v}
+var NOET=["Local inaccessible","Maintenance de plus de 12 mois","Objet saillant","Marche / escalier accès immeuble","Local OM encombré","Parking encombré"];
+var SUB={"Plafonnier / globe":["Cassé","Changement d’ampoule"],"Prise":["Cassée","Dénudée"],"Interrupteur":["Cassé","Dénudé"],
+"Vantail":["Bois fissuré","Déformé","Percé","Cassé","Porte HS","Modification non autorisée"],"Paumelles":["Jeu","Desserrage","Corrosion"],"Joints":["Absents","Arrachés","Détériorés"],"Ferme-porte":["Absent","Cassé","Inefficace"],"Serrure":["Défectueuse"],"Fermeture":["Porte qui reste entrouverte"],"Modifications":["Découpe","Perçage","Ajout"]};
+var SUBSUB={"Modification non autorisée":["Découpe","Perçage","Ajout"]};
+function itl(s){var i=s.indexOf(" : ");return i<0?esc(s):esc(s.slice(0,i+3))+"<i>"+esc(s.slice(i+3))+"</i>"}
+function sublab(a,p,l){var s=a.su&&a.su[p]&&a.su[p][l];if(!(s&&s.length))return l;var lc=function(x){return x.charAt(0).toLowerCase()+x.slice(1)};return l+" : "+s.map(function(o){var t=a.ss&&a.ss[p]&&a.ss[p][l+"|"+o];return lc(o)+(t&&t.length?" ("+t.map(lc).join(", ")+")":"")}).join(", ")}
+function allAn(a,p){var sel=(a.an&&a.an[p])||[],base=(ANO[p]||[]).concat((S.customAnomalies&&S.customAnomalies[p])||[]),removed=(S.removedAnomalies&&S.removedAnomalies[p])||[];base=base.filter(function(x){return removed.indexOf(x)<0});return base.concat(sel.filter(function(x){return base.indexOf(x)<0&&removed.indexOf(x)<0}))}
+var PO=["Façade d’immeuble","Portes d’entrée immeubles","Hall, palier et escalier","Encombrants","Électricité","BAES","Ascenseurs","Porte coupe-feu","Colonnes sèches","Gaines","Skydome","Trappe d’accès à la toiture"];
+var G=[
+["MARINHO / LAURA","Rue Jean Cocteau:1,3,5,7,9,11,13,15,17","Rue Gounod:2,4,6,8,10"],
+["MERAND","Avenue du 8 Mai 1945:2,4,6,8,10,12,14,16,22,24","Place Maillol:2,4,6,8"],
+["OULD WEDAD","Square Chabrier:1*,3*","Place Berlioz:1*,3*","Pompon:1,2*","Place du 19 Mars 1962:16*"],
+["DIA","Place Messager:1,3,5,7,9","Avenue du 8 Mai 1945:13,15,17,19,21","Rue Gounod:1*,3*"],
+["EMMANUEL (SISSOKO en CDD)","Rue Seurat:1,3","Avenue du 8 Mai 1945:29,31,33,35,62*,27,48"],
+["WADE","Rue Renoir:2,4,6,8,10,12","Rue Bourdelle:1,3,5","Avenue du 8 Mai 1945:25*"],
+["FATTAH","Rue Rodin:2,4,6,8,10,12","Avenue du 8 Mai 1945:23*","Rue Bourdelle:9*","Avenue du 8 Mai 1945:34*"],
+["ROISINE","Place Rude:2,4,6,8,10,12,14","Avenue du 8 Mai 1945:26,28,30,32","Rue Bourdelle:2,4,6,8"]];
+function build(){var r=[];G.forEach(function(g){for(var i=1;i<g.length;i++){var sp=g[i].split(":");sp[1].split(",").forEach(function(n){r.push({nom:n.replace("*","")+" "+sp[0],g:g[0],asc:n.indexOf("*")>=0,st:{},com:""})})}});return r}
+function fresh(){return{secteur:"Secteur 4",gardien:G[0][0],date:new Date().toISOString().slice(0,10),
+points:PO.slice(),customAnomalies:{},
+adresses:build()}}
+var S;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!S||!S.adresses)S=fresh();
+// Configuration de gestion séparée : les changements de points/anomalies ne sont
+// jamais réinitialisés par la création d’un nouveau contrôle.
+var MANAGER_CONFIG_KEY="controle-securite-gestion-persistante-v1";
+try{
+  var managerConfig=JSON.parse(localStorage.getItem(MANAGER_CONFIG_KEY)||"null");
+  if(managerConfig){
+    ["points","customPoints","customAnomalies","removedAnomalies","floorAnomalies","noFloorAnomalies","gardienNames","floorConfigVersion","pointCatalogOrder"].forEach(function(k){
+      if(managerConfig[k]!==undefined)S[k]=managerConfig[k];
+    });
+  }
+}catch(e){}
+// La liste active des gardiens est conservée dans les données locales.
+if(Array.isArray(S.gardienNames)){var savedNames=S.gardienNames;G=G.filter(function(g){return savedNames.indexOf(g[0])>=0});savedNames.forEach(function(n){if(!G.some(function(g){return g[0]===n}))G.push([n])})}
+S.customAnomalies=S.customAnomalies||{};
+S.floorAnomalies=S.floorAnomalies||{};
+S.noFloorAnomalies=S.noFloorAnomalies||{};
+S.customPoints=Array.isArray(S.customPoints)?S.customPoints:[];
+S.customPoints=S.customPoints.filter(function(p){return typeof p==="string"&&p.trim()});
+S.customPoints.forEach(function(p){if(S.points.indexOf(p)<0)S.points.push(p)});
+S.removedAnomalies=S.removedAnomalies||{}; // Conserve les anomalies retirées entre les ouvertures de l’application
+S.customAnomalies=S.customAnomalies||{};
+S.floorAnomalies=S.floorAnomalies||{};
+S.noFloorAnomalies=S.noFloorAnomalies||{};
+// Migration unique : récupérer les anomalies ayant déjà des étages enregistrés
+// dans les contrôles, puis ne plus jamais réactiver automatiquement un choix.
+if(S.floorConfigVersion!==2){
+  (S.adresses||[]).forEach(function(ad){
+    [ad.et,ad.etDecision].forEach(function(group){
+      Object.keys(group||{}).forEach(function(p){
+        Object.keys(group[p]||{}).forEach(function(a){
+          if(String(group[p][a]||'').trim()){
+            S.floorAnomalies[p]=S.floorAnomalies[p]||[];
+            if(S.floorAnomalies[p].indexOf(a)<0)S.floorAnomalies[p].push(a);
+          }
+        });
+      });
+    });
+  });
+  Object.keys(ETONLY).forEach(function(p){
+    S.floorAnomalies[p]=Array.from(new Set((S.floorAnomalies[p]||[]).concat(ETONLY[p])));
+  });
+  Object.keys(S.noFloorAnomalies).forEach(function(p){
+    S.floorAnomalies[p]=(S.floorAnomalies[p]||[]).filter(function(a){return S.noFloorAnomalies[p].indexOf(a)<0;});
+  });
+  S.floorConfigVersion=2;
+}
+// Réintègre automatiquement toutes les adresses de référence du secteur 4,
+// sans écraser les contrôles, commentaires ou photos déjà enregistrés.
+(function(){var ref=build(),seen={};S.adresses.forEach(function(a){seen[String(a.g)+"|"+String(a.nom).trim().toLowerCase()]=true});ref.forEach(function(a){var k=String(a.g)+"|"+String(a.nom).trim().toLowerCase();if(!seen[k]){S.adresses.push(a);seen[k]=true}});try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}})();
+var REN={"Ascenseur":"Ascenseurs","Porte d’entrée":"Portes d’entrée immeubles","Skylux":"Skydome","Hall et couloir":"Hall, palier et escalier","Hall, couloir et escalier":"Hall, palier et escalier","Échelle d’accès au toit":"Trappe d’accès à la toiture"};
+// Normalise les anciens libellés et supprime les doublons de points.
+function canonicalPoint(p){return REN[p]||p}
+function uniquePoints(list){var seen={};return (Array.isArray(list)?list:[]).map(canonicalPoint).filter(function(p){if(!p||seen[p])return false;seen[p]=true;return true})}
+S.points=uniquePoints(S.points);
+S.customPoints=uniquePoints(S.customPoints).filter(function(p){return PO.indexOf(p)<0});
+S.pointCatalogOrder=uniquePoints(S.pointCatalogOrder);
+S.adresses.forEach(function(a){["st","an","et","dt","ph"].forEach(function(f){if(a[f])for(var k in REN){if(a[f][k]!==undefined){var old=a[f][k],target=REN[k];if(a[f][target]===undefined)a[f][target]=old;else if(Array.isArray(old)&&Array.isArray(a[f][target]))a[f][target]=a[f][target].concat(old.filter(function(x){return a[f][target].indexOf(x)<0}));delete a[f][k]}}})});
+["customAnomalies","removedAnomalies","floorAnomalies","noFloorAnomalies"].forEach(function(field){var source=S[field]||{};Object.keys(REN).forEach(function(old){if(source[old]!==undefined){var target=REN[old];source[target]=Array.isArray(source[target])?source[target].concat(source[old].filter(function(x){return source[target].indexOf(x)<0})):source[old];delete source[old]}});S[field]=source});
+["Colonnes sèches","Encombrants","Trappe d’accès à la toiture","BAES","Hall, palier et escalier","Électricité","Façade d’immeuble","Porte coupe-feu"].forEach(function(p){if(S.points.indexOf(p)<0)S.points.push(p)});
+S.adresses.forEach(function(a){if(a.an)for(var p in a.an)a.an[p]=a.an[p].map(function(l){return l==="Chaîne manquante"?"Chaînette manquante":l});if(a.et)for(var q in a.et)if(a.et[q]["Chaîne manquante"]!==undefined){a.et[q]["Chaînette manquante"]=a.et[q]["Chaîne manquante"];delete a.et[q]["Chaîne manquante"]}});
+S.adresses.forEach(function(a){if(a.an&&a.an["Ascenseurs"])a.an["Ascenseurs"]=a.an["Ascenseurs"].map(function(l){return l==="Bouton cassé"?"Bouton d’appel cassé":l});if(a.et&&a.et["Ascenseurs"]&&a.et["Ascenseurs"]["Bouton cassé"]!==undefined){a.et["Ascenseurs"]["Bouton d’appel cassé"]=a.et["Ascenseurs"]["Bouton cassé"];delete a.et["Ascenseurs"]["Bouton cassé"]}});
+S.adresses.forEach(function(a){if(a.an&&a.an["Ascenseurs"])a.an["Ascenseurs"]=a.an["Ascenseurs"].map(function(l){return l==="Console affichage étage"?"Écran d’affichage de l’étage":l})});
+S.adresses.forEach(function(a){if(a.su)for(var p in a.su)for(var l in a.su[p])a.su[p][l]=a.su[p][l].map(function(o){return o==="Ampoule"?"Changement d’ampoule":o})});
+S.adresses.forEach(function(a){var l=a.an&&a.an["Portes d’entrée immeubles"];if(l)a.an["Portes d’entrée immeubles"]=l.map(function(o){return o==="Porte bloquée ouverte"?"Porte ouverte":o})});
+S.adresses.forEach(function(a){var l=a.an&&a.an["Électricité"];if(l)a.an["Électricité"]=l.map(function(o){return o==="Prise cassée / dénudée"?"Prise":o});var e=a.et&&a.et["Électricité"];if(e&&e["Prise cassée / dénudée"]!==undefined){e["Prise"]=e["Prise cassée / dénudée"];delete e["Prise cassée / dénudée"]}});
+S.adresses.forEach(function(a){if(a.an&&a.an["Ascenseurs"])a.an["Ascenseurs"]=a.an["Ascenseurs"].filter(function(o){return o!=="Sale / dégradé"})});
+S.adresses.forEach(function(a){var l=a.an&&a.an["Électricité"];if(l)a.an["Électricité"]=l.map(function(o){return o==="Interrupteur cassé / dénudé"?"Interrupteur":o});var e=a.et&&a.et["Électricité"];if(e&&e["Interrupteur cassé / dénudé"]!==undefined){e["Interrupteur"]=e["Interrupteur cassé / dénudé"];delete e["Interrupteur cassé / dénudé"]}});
+S.adresses.forEach(function(a){var l=a.an&&a.an["Échelle d’accès au toit"];if(l)a.an["Échelle d’accès au toit"]=l.map(function(o){return o==="Échelon cassé / rouillé"?"Échelle cassée / rouillée":o})});
+S.adresses.forEach(function(a){var l=a.an&&a.an["Échelle d’accès au toit"];if(l)a.an["Échelle d’accès au toit"]=l.filter(function(o){return o!=="Trappe ouverte"}).map(function(o){return o==="Échelle cassée / rouillée"?"Échelle cassée":o})});
+S.adresses.forEach(function(a){var l=a.an&&a.an["Ascenseurs"];if(l)a.an["Ascenseurs"]=l.map(function(o){return o==="Imprécision à l’arrêt créant une marche"?"Décalage de niveau à l’arrêt avec le plancher de plus de 2 cm":o==="Manque informations charge max autorisée"?"Manque l’information charge maximum autorisée":o})});
+S.adresses.forEach(function(a){var l=a.an&&a.an["Trappe d’accès à la toiture"];if(l)a.an["Trappe d’accès à la toiture"]=l.map(function(o){return o==="Cadenas manquant"?"Cadenas cassé ou absent":o})});
+S.points.sort(function(a,b){var x=PO.indexOf(a),y=PO.indexOf(b);return (x<0?99:x)-(y<0?99:y)});
+function orderedPoints(){var order=Array.isArray(S.pointCatalogOrder)?S.pointCatalogOrder:[];return S.points.slice().sort(function(a,b){var ia=order.indexOf(a),ib=order.indexOf(b);if(ia<0)ia=9999;if(ib<0)ib=9999;return ia-ib||S.points.indexOf(a)-S.points.indexOf(b)})}
+
+// Nettoyage unique demandé : retirer Interphone du catalogue et des anciennes données.
+// Le point pourra ensuite être recréé manuellement depuis la gestion, sans être réintroduit par défaut.
+(function(){
+  var cleanupKey="controle-securite-interphone-retire-v1";
+  if(localStorage.getItem(cleanupKey)==="1")return;
+  var names=["Interphone","Interphones"];
+  function stripAddress(a){if(!a)return;["st","an","et","dt","ph"].forEach(function(field){if(a[field])names.forEach(function(n){delete a[field][n];});});}
+  S.points=(S.points||[]).filter(function(p){return names.indexOf(String(p).trim())<0;});
+  S.customPoints=(S.customPoints||[]).filter(function(p){return names.indexOf(String(p).trim())<0;});
+  S.pointCatalogOrder=(S.pointCatalogOrder||[]).filter(function(p){return names.indexOf(String(p).trim())<0;});
+  (S.adresses||[]).forEach(stripAddress);
+  (S.history||[]).forEach(function(h){h.points=(h.points||[]).filter(function(p){return names.indexOf(String(p).trim())<0;});(h.adresses||[]).forEach(stripAddress);});
+  try{
+    localStorage.setItem(KEY,JSON.stringify(S));
+    var cfg=JSON.parse(localStorage.getItem(MANAGER_CONFIG_KEY)||"null");
+    if(cfg){cfg.points=(cfg.points||[]).filter(function(p){return names.indexOf(String(p).trim())<0;});cfg.customPoints=(cfg.customPoints||[]).filter(function(p){return names.indexOf(String(p).trim())<0;});cfg.pointCatalogOrder=(cfg.pointCatalogOrder||[]).filter(function(p){return names.indexOf(String(p).trim())<0;});localStorage.setItem(MANAGER_CONFIG_KEY,JSON.stringify(cfg));}
+    localStorage.setItem(cleanupKey,"1");
+  }catch(e){}
+})();
+
+// Nettoyage unique de l’anomalie automatique « Porte de… » sur le point Cave.
+// Cave reste un point personnalisable : aucune anomalie n’est préremplie et
+// l’utilisateur pourra ensuite ajouter manuellement les anomalies de son choix.
+(function(){
+  var cleanupKey="controle-securite-cave-porte-default-retire-v1";
+  if(localStorage.getItem(cleanupKey)==="1")return;
+  function isCave(name){return String(name||"").trim().toLocaleLowerCase("fr")==="cave";}
+  function isAutoPorte(name){return /^porte\s+de\b/i.test(String(name||"").trim());}
+  [S.customAnomalies,S.removedAnomalies,S.floorAnomalies,S.noFloorAnomalies].forEach(function(group){
+    Object.keys(group||{}).forEach(function(point){
+      if(isCave(point)&&Array.isArray(group[point]))group[point]=group[point].filter(function(name){return !isAutoPorte(name);});
+    });
+  });
+  (S.adresses||[]).forEach(function(address){
+    ["an","et","su","ss","ph"].forEach(function(field){
+      var group=address[field];
+      if(!group)return;
+      Object.keys(group).forEach(function(point){
+        if(!isCave(point))return;
+        if(field==="an"&&Array.isArray(group[point]))group[point]=group[point].filter(function(name){return !isAutoPorte(name);});
+        else if(group[point]&&typeof group[point]==="object"){
+          Object.keys(group[point]).forEach(function(anomaly){if(isAutoPorte(anomaly))delete group[point][anomaly];});
+        }
+      });
+    });
+  });
+  try{
+    localStorage.setItem(KEY,JSON.stringify(S));
+    var cfg=JSON.parse(localStorage.getItem(MANAGER_CONFIG_KEY)||"null");
+    if(cfg){["customAnomalies","removedAnomalies","floorAnomalies","noFloorAnomalies"].forEach(function(field){var group=cfg[field]||{};Object.keys(group).forEach(function(point){if(isCave(point)&&Array.isArray(group[point]))group[point]=group[point].filter(function(name){return !isAutoPorte(name);});});cfg[field]=group;});localStorage.setItem(MANAGER_CONFIG_KEY,JSON.stringify(cfg));}
+    localStorage.setItem(cleanupKey,"1");
+  }catch(e){}
+})();
+
+// Sauvegarde les réglages personnalisés et les suppressions après les migrations.
+try{
+  localStorage.setItem(KEY,JSON.stringify(S));
+  localStorage.setItem(MANAGER_CONFIG_KEY,JSON.stringify({points:S.points||[],customPoints:S.customPoints||[],customAnomalies:S.customAnomalies||{},removedAnomalies:S.removedAnomalies||{},floorAnomalies:S.floorAnomalies||{},noFloorAnomalies:S.noFloorAnomalies||{},gardienNames:S.gardienNames||[],floorConfigVersion:2,pointCatalogOrder:S.pointCatalogOrder||[]}));
+}catch(e){}
+var FB=build();S.adresses.forEach(function(a){FB.forEach(function(f){if(f.nom===a.nom&&f.g===a.g)a.asc=f.asc})});
+function save(){
+  try{
+    S.history=S.history||[];
+    var snap=JSON.parse(JSON.stringify({date:S.date,gardien:S.gardien,secteur:S.secteur,points:S.points,adresses:S.adresses}));
+    var hk=String(snap.date)+"|"+String(snap.gardien);
+    var hi=S.history.findIndex(function(x){return x.key===hk});
+    snap.key=hk;
+    if(hi>=0)S.history[hi]=snap;else S.history.push(snap);
+    localStorage.setItem(KEY,JSON.stringify(S));
+    // Sauvegarde durable et indépendante des paramètres de gestion.
+    localStorage.setItem(MANAGER_CONFIG_KEY,JSON.stringify({
+      points:S.points||[],customPoints:S.customPoints||[],
+      customAnomalies:S.customAnomalies||{},removedAnomalies:S.removedAnomalies||{},
+      floorAnomalies:S.floorAnomalies||{},noFloorAnomalies:S.noFloorAnomalies||{},gardienNames:S.gardienNames||[],floorConfigVersion:2,pointCatalogOrder:S.pointCatalogOrder||[]
+    }));
+  }catch(e){toast("Attention : sauvegarde locale impossible",3000)}
+  cloudSave()
+}
+function pointLabel(p){var raw=String(p==null?"":p).trim(),key=raw.toLocaleLowerCase("fr").replace(/[’]/g,"'");var labels={"ascenseurs":"Ascenseur","ascenseur":"Ascenseur","portes d'entrée immeubles":"Porte d’entrée immeuble","porte d'entrée immeubles":"Porte d’entrée immeuble","portes d’entrée immeubles":"Porte d’entrée immeuble","porte d’entrée immeubles":"Porte d’entrée immeuble","porte d’entrée immeuble":"Porte d’entrée immeuble"};return labels[key]||raw}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function toast(t,ms){var e=document.getElementById("toast");e.textContent=t;e.className="on";setTimeout(function(){e.className=""},ms||1800)}
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+var MO={janvier:1,"février":2,fevrier:2,mars:3,avril:4,mai:5,juin:6,juillet:7,"août":8,aout:8,septembre:9,octobre:10,novembre:11,"décembre":12,decembre:12};
+function iso(y,m,d){y=+y;m=+m;d=+d;var t=new Date(y,m-1,d);if(!y||m<1||m>12||t.getMonth()!==m-1||t.getDate()!==d)return null;return y+"-"+("0"+m).slice(-2)+"-"+("0"+d).slice(-2)}
+function parseDate(s){s=s.toLowerCase().replace(/1er|premier/g,"1");var t=new Date(),r;
+  if(/aujourd/.test(s))return iso(t.getFullYear(),t.getMonth()+1,t.getDate());
+  if(/hier/.test(s)){t.setDate(t.getDate()-1);return iso(t.getFullYear(),t.getMonth()+1,t.getDate())}
+  r=s.match(/(\d{1,2})\s*(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)\s*(\d{4})?/);
+  if(r)return iso(r[3]||t.getFullYear(),MO[r[2]],r[1]);
+  r=s.match(/(\d{1,2})[\s\/.\-]+(\d{1,2})[\s\/.\-]+(\d{4}|\d{2})\b/);
+  if(r)return iso(r[3].length===2?"20"+r[3]:r[3],r[2],r[1]);
+  return null}
+function dictate(i,j,btn){var rec=new SR();rec.lang="fr-FR";rec.interimResults=false;rec.maxAlternatives=3;btn.textContent="…";
+  rec.onresult=function(e){var txt="",d=null;for(var k=0;k<e.results[0].length&&!d;k++){txt=e.results[0][k].transcript;d=parseDate(txt)}
+    if(d){var a=S.adresses[i];a.dt=a.dt||{};a.dt[S.points[j]]=d;save();render();toast("Date : "+d.split("-").reverse().join("/"))}else{toast("Date non comprise : « "+txt+" »");btn.textContent="🎤"}};
+  rec.onerror=function(){toast("Micro indisponible : utilise le micro du clavier");btn.textContent="🎤"};
+  rec.onend=function(){if(btn.textContent==="…")btn.textContent="🎤"};
+  try{rec.start()}catch(e){toast("Micro indisponible");btn.textContent="🎤"}}
+function render(){
+  var h="",ok=0,ko=0,todo=0;
+  S.adresses.forEach(function(a,i){if(S.gardien&&a.g!==S.gardien)return;
+    h+='<div class="card"><div class="ad"><input data-n="'+i+'" value="'+esc(a.nom)+'" aria-label="Adresse"'+(ACC==="*"?'':' readonly')+'>'+(ACC==="*"?'<button class="x" data-del="'+i+'" title="Supprimer l’adresse">×</button>':'')+'</div>';
+    orderedPoints().forEach(function(p,j){if((p==="Ascenseurs"||p==="BAES"||p==="Colonnes sèches"||p==="Porte coupe-feu")&&!a.asc)return;
+      var v=a.st[p]||"";if(v==="ok")ok++;else if(v==="ko")ko++;else if(v==="")todo++;
+      if(p===TR){var e0=a.ex&&a.ex[p];if(v==="ok")ok--;else if(v==="ko")ko--;else if(v==="")todo--;
+        if(e0==="Existante"){if(v==="ok")ok++;else if(v==="ko")ko++;else if(v==="")todo++}else if(!e0)todo++;
+        h+='<div class="pt"><span>'+esc(pointLabel(p))+'</span>'+(e0==="Existante"?'<button class="st '+(v||"empty")+'" data-i="'+i+'" data-j="'+esc(p)+'">'+LAB[v]+'</button>':'')+'</div>';
+        h+='<div class="an">';["Existante","Inexistante"].forEach(function(o){h+='<button class="chip ex'+(e0===o?' on':'')+'" data-ex="'+i+'" data-p="'+esc(p)+'" data-o="'+o+'">'+o+'</button>'});h+='</div>'}
+      else{h+='<div class="pt"><span>'+esc(pointLabel(p))+'</span><button class="st '+(v||"empty")+'" data-i="'+i+'" data-j="'+esc(p)+'">'+LAB[v]+'</button></div>'}
+      if(false){var ex=a.ex&&a.ex[p];h+='<div class="an">';["Existante","Inexistante"].forEach(function(o){h+='<button class="chip'+(ex===o?' on':'')+'" data-ex="'+i+'" data-p="'+esc(p)+'" data-o="'+o+'">'+o+'</button>'});h+='</div>'}
+      if(v==="ko"&&!(p===TR&&!(a.ex&&a.ex[p]==="Existante"))){var sel=(a.an&&a.an[p])||[];h+='<div class="an">';
+        allAn(a,p).forEach(function(x,k){h+='<button class="chip'+(sel.indexOf(x)>=0?' on':'')+'" data-a="'+i+'" data-p="'+esc(p)+'" data-k="'+k+'">'+esc(x)+'</button>'});
+        h+='<button class="chip add" data-ad="'+i+'" data-p="'+esc(p)+'">+ Autre</button></div>';
+        sel.forEach(function(x){h+=phRow(a,i,j,p,x);var floorEnabled=!!(S.floorAnomalies&&S.floorAnomalies[p]&&S.floorAnomalies[p].indexOf(x)>=0);if(floorEnabled&&["Boîte aux lettres","Boîtes aux lettres","Boite aux lettres","Boites aux lettres","Plan évacuation incendie","Plan de sécurité incendie"].indexOf(p)<0){}if(!floorEnabled)return;var f=(a.et&&a.et[p]&&a.et[p][x])||"";h+='<div class="et"><span>'+esc(x)+'</span><input data-e="'+i+'" data-q="'+esc(p)+'" data-lb="'+esc(x)+'" placeholder="Étage(s) concerné(s)" value="'+esc(f)+'"></div>';if(SUB[x]){var ss=(a.su&&a.su[p]&&a.su[p][x])||[];h+='<div class="an" style="padding-left:12px">';SUB[x].forEach(function(o){h+='<button class="chip'+(ss.indexOf(o)>=0?' on':'')+'" data-su="'+i+'" data-p="'+esc(p)+'" data-lb="'+esc(x)+'" data-o="'+esc(o)+'">'+esc(o)+'</button>'});h+='</div>';ss.forEach(function(o){if(SUBSUB[o]){var tt=(a.ss&&a.ss[p]&&a.ss[p][x+"|"+o])||[];h+='<div class="an" style="padding-left:24px">';SUBSUB[o].forEach(function(t){h+='<button class="chip'+(tt.indexOf(t)>=0?' on':'')+'" data-ss="'+i+'" data-p="'+esc(p)+'" data-lb="'+esc(x)+'" data-o="'+esc(o)+'" data-t="'+esc(t)+'">'+esc(t)+'</button>'});h+='</div>'}})}})}
+      if(p==="Colonnes sèches"){h+='<div class="dt"><label>Date du dernier entretien</label><div class="row"><input type="text" autocomplete="off" placeholder="ex. 12 mars 2025 (micro 🎤 du clavier)" data-d="'+i+'" data-q="'+esc(p)+'" value="'+esc(a.dt&&a.dt[p]?a.dt[p].split("-").reverse().join("/"):"")+'"></div></div>'}
+    });
+    h+='<div class="dt"><label>Présence d’une porte SITEX</label><div class="row"><select data-citex="'+i+'"><option value=""'+(!a.citex?' selected':'')+'>À renseigner</option><option value="non"'+(a.citex==='non'?' selected':'')+'>Non</option><option value="oui"'+(a.citex==='oui'?' selected':'')+'>Oui</option></select>'+(a.citex==='oui'?'<input data-citex-floor="'+i+'" placeholder="Étage(s) concerné(s)" value="'+esc(a.citexEtage||'')+'">':'')+'</div></div>';
+    h+='<label>Commentaires</label><textarea data-c="'+i+'" placeholder="Ex. : n°3, miroir manquant">'+esc(a.com)+'</textarea></div>';
+  });
+  document.getElementById("list").innerHTML=h;
+  document.getElementById("nOk").textContent=ok;document.getElementById("nKo").textContent=ko;document.getElementById("nTodo").textContent=todo;
+  var gs=[""].concat(G.map(function(g){return g[0]})),gsel=document.getElementById("gardien");
+  gsel.innerHTML=gs.map(function(x){return '<option value="'+esc(x)+'">'+esc(x||"Tous les gardiens")+'</option>'}).join("");
+  document.getElementById("secteur").value=S.secteur;gsel.value=S.gardien;document.getElementById("date").value=S.date;
+}
+document.getElementById("list").addEventListener("click",function(e){
+  var t=e.target;
+  if(t.closest&&t.closest("label.chip"))toast("Si l’appareil photo ne s’ouvre pas, ouvre cette page dans le navigateur du téléphone (Chrome ou Safari).",5000);
+  if(t.dataset.i!==undefined){var a=S.adresses[t.dataset.i],p=t.dataset.j;
+    var cur=a.st[p]||"";a.st[p]=cur===""?"ok":ORDER[ORDER.indexOf(cur)%3+1];if(a.st[p]!=="ko"){if(a.ex)delete a.ex[p];if(a.an)delete a.an[p];if(a.et)delete a.et[p];if(a.su)delete a.su[p];if(a.ss)delete a.ss[p];if(a.ph)delete a.ph[p]}save();render()}
+  else if(t.dataset.k!==undefined){var a2=S.adresses[t.dataset.a],p2=t.dataset.p,lab=allAn(a2,p2)[t.dataset.k];a2.an=a2.an||{};var l=a2.an[p2]=a2.an[p2]||[],ix=l.indexOf(lab);if(ix>=0)l.splice(ix,1);else l.push(lab);save();render()}
+  else if(t.dataset.ad!==undefined){var a3=S.adresses[t.dataset.ad],p3=t.dataset.p;askText("Autre anomalie","Décris l’anomalie",function(n){a3.an=a3.an||{};(a3.an[p3]=a3.an[p3]||[]).push(n);save();render()})}
+  else if(t.dataset.ph!==undefined){PHT={i:+t.dataset.ph,p:t.dataset.p,lb:t.dataset.lb};document.getElementById("phFile").click()}
+  else if(t.dataset.pd!==undefined){var a8=S.adresses[t.dataset.pd],p8=t.dataset.p,l8=t.dataset.lb,L8=a8.ph&&a8.ph[p8]&&a8.ph[p8][l8];if(L8){a8.ph[p8][l8]=L8.filter(function(m){return m.id!==t.dataset.id});phDel(t.dataset.id);save();render()}}
+  else if(t.dataset.ex!==undefined){var a6=S.adresses[t.dataset.ex],p6=t.dataset.p;a6.ex=a6.ex||{};if(a6.ex[p6]===t.dataset.o)delete a6.ex[p6];else a6.ex[p6]=t.dataset.o;if(a6.ex[p6]!=="Existante"&&a6.an)delete a6.an[p6];save();render()}
+  else if(t.dataset.ss!==undefined){var a7=S.adresses[t.dataset.ss],p7=t.dataset.p,k7=t.dataset.lb+"|"+t.dataset.o;a7.ss=a7.ss||{};a7.ss[p7]=a7.ss[p7]||{};var s7=a7.ss[p7][k7]=a7.ss[p7][k7]||[],x7=s7.indexOf(t.dataset.t);if(x7>=0)s7.splice(x7,1);else s7.push(t.dataset.t);save();render()}
+  else if(t.dataset.su!==undefined){var a5=S.adresses[t.dataset.su],p5=t.dataset.p,l5=t.dataset.lb,o5=t.dataset.o;a5.su=a5.su||{};a5.su[p5]=a5.su[p5]||{};var s5=a5.su[p5][l5]=a5.su[p5][l5]||[],x5=s5.indexOf(o5);if(x5>=0){s5.splice(x5,1);if(a5.ss&&a5.ss[p5])delete a5.ss[p5][l5+"|"+o5]}else s5.push(o5);save();render()}
+  else if(t.dataset.today!==undefined){var a4=S.adresses[t.dataset.today];a4.dt=a4.dt||{};var tn=new Date();a4.dt[t.dataset.q]=iso(tn.getFullYear(),tn.getMonth()+1,tn.getDate());save();render()}
+  else if(t.dataset.del!==undefined){var di=t.dataset.del;askYes("Supprimer cette adresse ?",function(){S.adresses.splice(di,1);save();render()})}
+});
+document.getElementById("list").addEventListener("input",function(e){
+  var t=e.target;
+  if(t.dataset.n!==undefined)S.adresses[t.dataset.n].nom=t.value;
+  if(t.dataset.c!==undefined)S.adresses[t.dataset.c].com=t.value;
+  if(t.dataset.citexFloor!==undefined)S.adresses[t.dataset.citexFloor].citexEtage=t.value;
+  
+  if(t.dataset.e!==undefined){var ae=S.adresses[t.dataset.e],pe=t.dataset.q;ae.et=ae.et||{};ae.et[pe]=ae.et[pe]||{};ae.et[pe][t.dataset.lb]=t.value}
+  save();
+});
+document.getElementById("list").addEventListener("change",function(e){var t=e.target;if(t.dataset.floorChoice!==undefined){var af=S.adresses[t.dataset.floorChoice],pf=t.dataset.q;af.etDecision=af.etDecision||{};af.etDecision[pf]=af.etDecision[pf]||{};if(t.value)af.etDecision[pf][t.dataset.lb]=t.value;else delete af.etDecision[pf][t.dataset.lb];save();return}if(t.dataset.citex!==undefined){var ac=S.adresses[t.dataset.citex];ac.citex=t.value;if(t.value!=="oui")ac.citexEtage="";save();render();return}if(t.dataset.d===undefined)return;var a=S.adresses[t.dataset.d],p=t.dataset.q,v=t.value.trim();a.dt=a.dt||{};
+  if(!v){delete a.dt[p];save();t.style.borderColor="";return}
+  var d=parseDate(v);if(d){a.dt[p]=d;save();t.value=d.split("-").reverse().join("/");t.style.borderColor=""}else{t.style.borderColor="var(--ko)";toast("Date non comprise : essaie « 12 mars 2025 »")}});
+["secteur","gardien","date"].forEach(function(k){document.getElementById(k).addEventListener("input",function(e){S[k]=e.target.value;save()})});
+document.getElementById("gardien").addEventListener("change",render);
+document.getElementById("addAd").onclick=openAddAd;
+document.getElementById("addPt").onclick=openAddPt;
+document.getElementById("guardiansBtn").onclick=openGuardians;
+document.getElementById("reset").onclick=function(){askYes("Repartir d’un contrôle vierge ? Les données du contrôle actuel seront effacées, mais les réglages des responsables seront conservés.",function(){var cfg={};["points","customPoints","customAnomalies","removedAnomalies","floorAnomalies","noFloorAnomalies","gardienNames","floorConfigVersion","pointCatalogOrder"].forEach(function(k){if(S[k]!==undefined)cfg[k]=JSON.parse(JSON.stringify(S[k]))});S=fresh();Object.keys(cfg).forEach(function(k){S[k]=cfg[k]});save();applyAcc()})};
+function css(p){return p+"h2{font-size:18px;margin:0 0 6px}"+p+"h3{font-size:15px;margin:16px 0 4px;border-bottom:1px solid #999}"+p+"table{width:100%;border-collapse:collapse;margin-bottom:6px}"+p+"th,"+p+"td{border:1px solid #bbb;padding:4px 6px;text-align:left;vertical-align:top;font-size:13px}"+p+"th{background:#eee}"+p+".s-ko{color:#c00;font-weight:700}"+p+".s-ok{color:#080}"+p+".s-na,"+p+".s-td,"+p+".s-nx{color:#666}"+p+".cm{margin:4px 0}"+p+".adr{break-inside:avoid;page-break-inside:avoid;margin-bottom:10px}"+p+"tr{break-inside:avoid}"}
+var rcss=document.createElement("style");rcss.textContent=css("#rep ");document.head.appendChild(rcss);
+function onlyAnom(){var c=document.getElementById("onlyAnom");return !!(c&&c.checked)}
+function rep(){var d=S.date.split("-").reverse().join("/"),ok=0,ko=0,todo=0,b="";
+  S.adresses.forEach(function(a){if(S.gardien&&a.g!==S.gardien)return;b+='<div class="adr"><h3>'+esc(a.nom)+'</h3><table><tr><th>Point</th><th>Statut</th><th>Détail</th></tr>';
+    orderedPoints().forEach(function(p){if(onlyAnom()&&ev(a,p)!=="ko")return;if((p==="Ascenseurs"||p==="BAES"||p==="Colonnes sèches"||p==="Porte coupe-feu")&&!a.asc)return;var v=ev(a,p);if(v==="ok")ok++;else if(v==="ko")ko++;else if(v==="")todo++;
+    if(a.citex==='oui')b+='<tr><td>Présence de porte SITEX</td><td class="s-ok">Oui</td><td>'+esc(a.citexEtage?'Étage(s) : '+a.citexEtage:'')+'</td></tr>'; 
+      var det=[];if(v==="ko"&&a.an&&a.an[p])a.an[p].forEach(function(l){var f=a.et&&a.et[p]&&a.et[p][l];det.push(itl(sublab(a,p,l)+(f?" (étage "+f+")":"")))});
+      var dt=a.dt&&a.dt[p];if(dt)det.push(itl("Dernier entretien : "+dt.split("-").reverse().join("/")));
+      b+='<tr><td>'+esc(pointLabel(p))+'</td><td class="s-'+(v||"td")+'">'+LAB[v]+'</td><td>'+det.join("<br>")+'</td></tr>'});
+    b+='</table>';if(a.com.trim())b+='<p class="cm"><b>Commentaires :</b> <i>'+esc(a.com.trim()).replace(/\n/g,"<br>")+'</i></p>';b+='</div>'});
+  return '<h2>Contrôle sécurité – Secteur '+esc(S.secteur)+'</h2><p>Gardien(ne) : '+esc(S.gardien||"—")+' · Date : '+d+'</p><p><b>'+ok+'</b> OK · <b>'+ko+'</b> anomalie(s) · <b>'+todo+'</b> à contrôler</p>'+b}
+var DL=null;
+window.addEventListener("afterprint",function(){document.body.classList.remove("printing")});
+function cl(s){return String(s).replace(/[\u2018\u2019]/g,"'").replace(/[\u2013\u2014]/g,"-").replace(/[\u00ab\u00bb]/g,'"').replace(/\u00b7/g,"-")}
+function makePdf(){var J=window.jspdf&&window.jspdf.jsPDF;if(!J)return null;
+  var doc=new J({unit:"mm",format:"a4"}),M=14,R=196,TOP=18,BOT=282,y=TOP,ok=0,ko=0,todo=0;
+  var ads=S.adresses.filter(function(a){return !(S.gardien&&a.g!==S.gardien)});
+  function pts(a){return orderedPoints().filter(function(p){return (!onlyAnom()||ev(a,p)==="ko")&&!((p==="Ascenseurs"||p==="BAES"||p==="Colonnes sèches"||p==="Porte coupe-feu")&&!a.asc)})}
+  function det(a,p,v){var d=[];if(v==="ko"&&a.an&&a.an[p])a.an[p].forEach(function(l){var f=a.et&&a.et[p]&&a.et[p][l];d.push(sublab(a,p,l)+(f?" (étage "+f+")":""))});var dt=a.dt&&a.dt[p];if(dt)d.push("Dernier entretien : "+dt.split("-").reverse().join("/"));return d}
+  function textLines(t,w,sz,style){doc.setFont("helvetica",style||"normal");doc.setFontSize(sz||9);return doc.splitTextToSize(cl(t||""),w)}
+  function pageIf(h){if(y+h>BOT&&y>TOP+1){doc.addPage();y=TOP}}
+  ads.forEach(function(a){pts(a).forEach(function(p){var v=ev(a,p);if(v==="ok")ok++;else if(v==="ko")ko++;else if(v==="")todo++})});
+  doc.setFont("helvetica","bold");doc.setFontSize(17);doc.setTextColor(31,95,191);doc.text(cl("Contrôle sécurité"),M,y);y+=7;
+  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(60,60,60);
+  doc.text(cl("Secteur "+S.secteur+"  |  Gardien(ne) : "+(S.gardien||"Tous")+"  |  Date : "+S.date.split("-").reverse().join("/")),M,y);y+=5.5;
+  doc.text(cl(ok+" OK  |  "+ko+" anomalie(s)  |  "+todo+" à contrôler"),M,y);y+=7;
+  ads.forEach(function(a){
+    pageIf(20);
+    doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(0,0,0);doc.text(cl(a.nom),M,y+4.5);y+=7;
+    doc.setDrawColor(150,150,150);doc.setLineWidth(.25);doc.line(M,y,R,y);y+=2;
+    var x1=M,x2=110,x3=151,x4=R;
+    function drawCell(x,w,yy,h,fill){if(fill){doc.setFillColor(238,238,238);doc.rect(x,yy,w,h,"F")}doc.setDrawColor(175,175,175);doc.setLineWidth(.25);doc.rect(x,yy,w,h)}
+    var hh=8;pageIf(hh+8);
+    drawCell(x1,x2-x1,y,hh,true);drawCell(x2,x3-x2,y,hh,true);drawCell(x3,x4-x3,y,hh,true);
+    doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(0,0,0);
+    doc.text("Point",x1+3,y+5.4);doc.text("Statut",x2+3,y+5.4);doc.text("Détail",x3+3,y+5.4);y+=hh;
+    var rows=pts(a).map(function(p){var v=ev(a,p),details=det(a,p,v).join(" ; ");return{p:p,v:v,details:details}});
+    if(a.citex==='oui')rows.push({p:'Présence de porte SITEX',v:'ok',details:a.citexEtage?'Étage(s) : '+a.citexEtage:''});
+    rows.forEach(function(r){
+      var pl=textLines(pointLabel(r.p),x2-x1-6,9,"normal"),sl=textLines(LAB[r.v]||"À contrôler",x3-x2-6,9,"normal"),dl=textLines(r.details,x4-x3-6,9,"normal");
+      var h=Math.max(8,Math.max(pl.length,sl.length,dl.length)*4.2+3);
+      pageIf(h+2);
+      drawCell(x1,x2-x1,y,h,false);drawCell(x2,x3-x2,y,h,false);drawCell(x3,x4-x3,y,h,false);
+      doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(20,20,20);pl.forEach(function(t,i){doc.text(t,x1+3,y+4.8+i*4.2)});
+      doc.setFont("helvetica","normal");doc.setTextColor(r.v==="ko"?190:r.v==="ok"?0:105,r.v==="ko"?25:r.v==="ok"?120:105,r.v==="ko"?25:r.v==="ok"?0:105);sl.forEach(function(t,i){doc.text(t,x2+3,y+4.8+i*4.2)});
+      doc.setTextColor(20,20,20);dl.forEach(function(t,i){doc.text(t,x3+3,y+4.8+i*4.2)});
+      y+=h;
+    });
+    if(a.com&&a.com.trim()){var lines=textLines("Commentaires : "+a.com.trim().replace(/\n/g," ; "),R-M-6,9,"normal");pageIf(lines.length*4.3+5);y+=2;doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(60,60,60);lines.forEach(function(t){doc.text(t,M+3,y+3);y+=4.3})}
+    if(PM){pts(a).forEach(function(p){if(ev(a,p)==="ko"&&a.ph&&a.ph[p]){var imgs=[];(a.an&&a.an[p]||[]).forEach(function(l){((a.ph[p]||{})[l]||[]).forEach(function(m){if(PM[m.id])imgs.push({l:l,d:PM[m.id],w:m.w,h:m.h})})});if(imgs.length){pageIf(40);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text(cl(p+" – photos"),M+2,y+3);y+=5;imgs.forEach(function(m){pageIf(38);var wm=38,hm=Math.min(30,wm*(m.h/m.w));try{doc.addImage(m.d,"JPEG",M+3,y,wm,hm)}catch(e){}doc.setFont("helvetica","normal");doc.setFontSize(7);doc.text(cl(m.l).slice(0,28),M+3,y+hm+3);y+=hm+6})}}})}
+    y+=7;
+  });
+  var n=doc.getNumberOfPages();for(var i=1;i<=n;i++){doc.setPage(i);doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(130,130,130);doc.text("Page "+i+" / "+n,R,290,{align:"right"})}
+  return doc}
+function savePdf(){if(!DL)return;withPhotos(function(){savePdf2()})}
+function savePdf2(){var d=makePdf();if(!d){toast("PDF indisponible");return}
+  DL.save({filename:"controle-securite-"+S.date+".pdf",data:new Blob([d.output("arraybuffer")],{type:"application/pdf"})}).catch(function(){toast("Enregistrement impossible")})}
+var DB=null,UI=null,ADM=false,myId=null,wt=null,SAVED=null,LST=[];
+function hid(a,p){return(p==="Ascenseurs"||p==="BAES"||p==="Colonnes sèches"||p==="Porte coupe-feu")&&!a.asc}
+function cloudSave(){if(!DB||!myId||!S.gardien||SAVED)return;clearTimeout(wt);wt=setTimeout(function(){try{DB.doc("reports/"+myId).set({gardien:S.gardien,secteur:S.secteur,date:S.date,points:S.points,adresses:S.adresses.filter(function(a){return a.g===S.gardien}),updated:Date.now()}).catch(function(){})}catch(e){}},2000)}
+
+function managerAllowed(){return ACC==="*"||/^R[23]$/.test(String(ACC))}
+function openManage(){
+ if(!managerAllowed())return;
+ var r=document.getElementById("rep");
+ r.innerHTML='<div class="rbar"><button class="b" id="mClose">Fermer</button></div><h2>Gestion des adresses et gardiens</h2>'+
+ '<div class="card"><h3>Ajouter un gardien</h3><label>Nom du gardien</label><input id="mGuard" placeholder="Nom et prénom"><button class="b p" id="mAddG">Ajouter le gardien</button></div>'+
+ '<div class="card"><h3>Retirer un gardien</h3><label>Gardien</label><select id="mDelG"></select><button class="b" id="mRemoveG">Retirer (historique conservé)</button></div>'+
+ '<div class="card"><h3>Ajouter une adresse</h3><label>Adresse complète</label><input id="mAddr" placeholder="Numéro et rue, ville"><label>Gardien responsable</label><select id="mAddrG"></select><button class="b p" id="mAddA">Ajouter l’adresse</button></div>'+
+ '<div class="card"><h3>Retirer une adresse</h3><label>Adresse</label><select id="mDelA"></select><button class="b" id="mRemoveA">Retirer (historique conservé)</button></div>';
+ r.hidden=false;r.scrollTop=0;
+ var gs=Array.from(new Set(G.map(function(x){return x[0]}).concat(S.adresses.map(function(a){return a.g}))));
+ function opts(id,arr){document.getElementById(id).innerHTML=arr.map(function(x){return '<option>'+esc(x)+'</option>'}).join("")}
+ opts("mDelG",gs);opts("mAddrG",gs);opts("mDelA",S.adresses.map(function(a,i){return i+" — "+a.nom+" ("+a.g+")"}));
+ document.getElementById("mClose").onclick=function(){r.hidden=true};
+ document.getElementById("mAddG").onclick=function(){var n=document.getElementById("mGuard").value.trim().toUpperCase();if(!n)return toast("Saisis un nom");if(gs.includes(n))return toast("Ce gardien existe déjà");G.push([n]);S.gardienNames=G.map(function(x){return x[0]});S.gardien=n;save();toast("Gardien ajouté");openManage()};
+ document.getElementById("mRemoveG").onclick=function(){var n=document.getElementById("mDelG").value;if(!confirm("Retirer "+n+" de la liste active ? Son historique sera conservé."))return;S.archives=S.archives||[];S.archives.push({type:"gardien retiré",nom:n,date:new Date().toISOString().slice(0,10),adresses:S.adresses.filter(function(a){return a.g===n})});S.adresses=S.adresses.filter(function(a){return a.g!==n});G=G.filter(function(x){return x[0]!==n});S.gardienNames=G.map(function(x){return x[0]});save();render();openManage()};
+ document.getElementById("mAddA").onclick=function(){var n=document.getElementById("mAddr").value.trim(),g=document.getElementById("mAddrG").value;if(!n)return toast("Saisis une adresse");S.adresses.push({nom:n,g:g,asc:false,st:{},com:""});save();render();toast("Adresse ajoutée");openManage()};
+ document.getElementById("mRemoveA").onclick=function(){var i=+document.getElementById("mDelA").value;if(!confirm("Retirer cette adresse de la liste active ?"))return;S.archives=S.archives||[];S.archives.push({type:"adresse retirée",...JSON.parse(JSON.stringify(S.adresses[i])),date:new Date().toISOString().slice(0,10)});S.adresses.splice(i,1);save();render();openManage()};
+}
+function openGuardians(){
+ if(!managerAllowed())return;
+ var r=document.getElementById("rep");
+ function draw(){
+  var names=G.map(function(g){return g[0]}).sort(function(a,b){return a.localeCompare(b,"fr")});
+  var list=names.map(function(n){var count=S.adresses.filter(function(a){return a.g===n}).length;return '<div class="pt"><span><b>'+esc(n)+'</b><br><small class="hint">'+count+' adresse(s) associée(s)</small></span><span class="row"><button class="b" data-edit-guard="'+esc(n)+'">Modifier</button><button class="b" data-del-guard="'+esc(n)+'">Retirer</button></span></div>'}).join("");
+  r.innerHTML='<div class="rbar"><button class="b" id="gClose">Fermer</button></div><h2>Gardiens</h2><div class="card"><h3>Ajouter un gardien</h3><label>Nom et prénom</label><input id="gNewName" placeholder="Nom du gardien"><button class="b p" id="gAdd">+ Ajouter un gardien</button></div><div class="card"><h3>Liste des gardiens</h3>'+ (list||'<p>Aucun gardien enregistré.</p>')+'</div>';
+  r.hidden=false;r.scrollTop=0;
+  document.getElementById("gClose").onclick=function(){r.hidden=true};
+  document.getElementById("gAdd").onclick=function(){var n=document.getElementById("gNewName").value.trim().toUpperCase();if(!n)return toast("Saisis un nom");if(G.some(function(g){return g[0].toLowerCase()===n.toLowerCase()}))return toast("Ce gardien existe déjà");G.push([n]);S.gardienNames=G.map(function(g){return g[0]});save();render();draw();toast("Gardien ajouté et enregistré")};
+  r.querySelectorAll("[data-edit-guard]").forEach(function(b){b.onclick=function(){var old=b.getAttribute("data-edit-guard");askText("Modifier le nom du gardien","Nouveau nom",function(value){var n=value.trim().toUpperCase();if(!n)return toast("Saisis un nom");if(G.some(function(g){return g[0].toLowerCase()===n.toLowerCase()&&g[0]!==old}))return toast("Ce gardien existe déjà");var item=G.find(function(g){return g[0]===old});if(!item)return;item[0]=n;S.adresses.forEach(function(a){if(a.g===old)a.g=n});if(S.gardien===old)S.gardien=n;S.gardienNames=G.map(function(g){return g[0]});save();render();draw();toast("Nom du gardien modifié et enregistré")});};});
+  r.querySelectorAll("[data-del-guard]").forEach(function(b){b.onclick=function(){var n=b.getAttribute("data-del-guard");askYes("Retirer le gardien « "+n+" » de la liste active ? Ses contrôles seront archivés.",function(){S.archives=S.archives||[];S.archives.push({type:"gardien retiré",nom:n,date:new Date().toISOString().slice(0,10),adresses:S.adresses.filter(function(a){return a.g===n})});S.adresses=S.adresses.filter(function(a){return a.g!==n});G=G.filter(function(g){return g[0]!==n});S.gardienNames=G.map(function(g){return g[0]});if(S.gardien===n)S.gardien="";save();render();draw();toast("Gardien retiré et modification enregistrée")})}})
+ }
+ draw();
+}
+function openHistory(){
+ if(!managerAllowed())return;
+ var r=document.getElementById("rep");
+ r.innerHTML='<div class="rbar"><button class="b" id="hClose">Fermer</button></div><h2>Historique des contrôles</h2><div class="card"><label>Gardien</label><input id="hGuard" placeholder="Nom du gardien"><label>Adresse</label><input id="hAddr" placeholder="Adresse"><div class="row"><div><label>Du</label><input type="date" id="hFrom"></div><div><label>Au</label><input type="date" id="hTo"></div></div><button class="b p" id="hSearch">Rechercher</button></div><div id="hResults"></div>';
+ r.hidden=false;r.scrollTop=0;
+ document.getElementById("hClose").onclick=function(){r.hidden=true};
+ document.getElementById("hSearch").onclick=function(){var g=document.getElementById("hGuard").value.toLowerCase(),a=document.getElementById("hAddr").value.toLowerCase(),f=document.getElementById("hFrom").value,t=document.getElementById("hTo").value;
+ var hist=(S.history||[]).concat((S.archives||[]).filter(function(x){return x.adresses}).map(function(x){return {date:x.date,gardien:x.nom,adresses:x.adresses,archive:true}}));
+ hist=hist.filter(function(x){return (!g||String(x.gardien).toLowerCase().includes(g))&&(!f||x.date>=f)&&(!t||x.date<=t)&&(!a||(x.adresses||[]).some(function(z){return z.nom.toLowerCase().includes(a)}))});
+ document.getElementById("hResults").innerHTML=hist.sort(function(x,y){return y.date.localeCompare(x.date)}).map(function(x){return '<div class="card"><b>'+esc(x.gardien||"Gardien archivé")+'</b> — '+esc(x.date)+'<br>'+esc((x.adresses||[]).map(function(z){return z.nom}).join(", "))+(x.archive?"<br><i>Gardien retiré</i>":"")+'</div>'}).join("")||"Aucun résultat."};
+}
+
+function initCloud(){if(!window.claude||!claude.use)return;
+  claude.use("user").then(function(u){UI=u;if(!u)return;u.id().then(function(i){myId=i});Promise.all([u.isOwner(),u.canEdit()]).then(function(r){ADM=r[0]||r[1];document.getElementById("admBtn").hidden=!ADM})}).catch(function(){});
+  claude.use("db").then(function(d){DB=d}).catch(function(){});claude.use("downloads").then(function(d){DL=d}).catch(function(){})}
+function cnt(st){var k=S,ok=0,ko=0,td=0;S=st;st.adresses.forEach(function(a){st.points.forEach(function(p){if(hid(a,p))return;var v=ev(a,p);if(v==="ok")ok++;else if(v==="ko")ko++;else if(v==="")td++})});S=k;return[ok,ko,td]}
+function adminView(st){SAVED=S;S=st;openRep()}
+function openAdm(){if(!DB)return;var r=document.getElementById("rep");
+  r.innerHTML='<div class="rbar"><button class="b p" id="aRef">Actualiser</button><button class="b" id="aClose">Fermer</button></div><h2>Rapports des gardiens</h2><div id="aList">Chargement…</div>';r.hidden=false;r.scrollTop=0;
+  document.getElementById("aClose").onclick=function(){r.hidden=true};
+  document.getElementById("aRef").onclick=openAdm;
+  DB.collection("reports").get().then(function(snap){LST=[];var ids=[];snap.docs.forEach(function(d){LST.push({id:d.id,st:d.data()});ids.push(d.id)});
+    LST.sort(function(a,b){return String(a.st.gardien).localeCompare(String(b.st.gardien))});
+    var box=document.getElementById("aList");if(!LST.length){box.textContent="Aucun rapport reçu pour l’instant.";return}
+    box.innerHTML=LST.map(function(x,i){var c=cnt(x.st);return '<div class="adr" style="border:1px solid #bbb;border-radius:8px;padding:8px;margin-bottom:8px"><b>'+esc(x.st.gardien||"?")+'</b><br><span class="who" data-id="'+esc(x.id)+'" style="font-size:12px;color:#666"></span><br><span style="font-size:13px">'+c[0]+' OK · '+c[1]+' anomalie(s) · '+c[2]+' à contrôler</span><br><span style="font-size:12px;color:#666">Mis à jour le '+new Date(x.st.updated||0).toLocaleString("fr-FR")+'</span><div style="margin-top:6px"><button class="b" data-vi="'+i+'">Voir le rapport</button></div></div>'}).join("");
+    box.onclick=function(e){var i=e.target.dataset.vi;if(i!==undefined)adminView(LST[i].st)};
+    if(UI&&UI.profiles)UI.profiles(ids).then(function(ps){box.querySelectorAll(".who").forEach(function(s){var p=ps[s.dataset.id];s.textContent=p&&p.name?"Compte : "+p.name:""})}).catch(function(){})
+  }).catch(function(){document.getElementById("aList").textContent="Lecture impossible."})}
+var CSRC="valeurs intégrées";var DEF={v:"1793554489983",g:{"MARINHO / LAURA":"0000","MERAND":"2483","OULD WEDAD":"8061","DIA":"3259","EMMANUEL (SISSOKO en CDD)":"6368","WADE":"1964","FATTAH":"9486","ROISINE":"7106"},a:["ADLI","YWSE","HJLN"]};
+var CFG=DEF,CODES={},ready=false;
+function mk(c){CFG=c;CODES={};Object.keys(c.g).forEach(function(n){CODES[c.g[n]]=n});c.a.forEach(function(x,i){CODES[x]=i===0?"*":"R"+(i+1)})}
+mk(DEF);
+var ACC=null;function loadAcc(){ACC=null;try{var s=localStorage.getItem("controle-securite-acc")||"",i=s.lastIndexOf("|");if(i>0&&s.slice(i+1)===CFG.v)ACC=s.slice(0,i)}catch(e){}if(ACC&&!Object.keys(CODES).some(function(k){return CODES[k]===ACC}))ACC=null}
+function setAcc(){try{if(ACC)localStorage.setItem("controle-securite-acc",ACC+"|"+CFG.v);else localStorage.removeItem("controle-securite-acc")}catch(e){}}
+function applyAcc(){var g=document.getElementById("gate"),sel=document.getElementById("gardien");var isResp=ACC==="*"||/^R[23]$/.test(String(ACC));document.getElementById("codesBtn").hidden=!isResp;document.getElementById("manageBtn").hidden=!isResp;document.getElementById("historyBtn").hidden=!isResp;document.getElementById("addAd").hidden=ACC!=="*";document.getElementById("addPt").hidden=ACC!=="*";document.getElementById("guardiansBtn").hidden=!isResp;
+  if(!ACC){g.hidden=false;return}g.hidden=true;
+  if(ACC!=="*"&&!/^R[23]$/.test(String(ACC))){S.gardien=ACC;save();sel.disabled=true}else{S.gardien="";save();sel.disabled=false;}
+  render()}
+/* Verrouillage par appareil : 3 codes erronés consécutifs = 15 minutes.
+   Le compteur est enregistré dans le stockage local de ce navigateur uniquement. */
+var DEVICE_ID=(function(){try{var k="controle-securite-device-id",v=localStorage.getItem(k);if(!v){v="dev-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);localStorage.setItem(k,v)}return v}catch(e){return "session-"+Date.now().toString(36)}})();
+var FAIL_KEY="controle-securite-fails-"+DEVICE_ID,LOCK_KEY="controle-securite-lock-"+DEVICE_ID,lockTicker=null,memoryFails=0,memoryLockUntil=0;
+function readFailCount(){var n=memoryFails;try{n=Math.max(n,parseInt(localStorage.getItem(FAIL_KEY)||"0",10)||0)}catch(e){}return n}
+function lockRemaining(){var until=memoryLockUntil;try{until=Math.max(until,parseInt(localStorage.getItem(LOCK_KEY)||"0",10)||0)}catch(e){}var left=until-Date.now();if(left<=0){memoryLockUntil=0;memoryFails=0;try{localStorage.removeItem(LOCK_KEY);localStorage.removeItem(FAIL_KEY)}catch(e){}return 0}return left}
+function showDeviceLock(){var left=lockRemaining(),i=document.getElementById("gcode"),b=document.getElementById("gok"),e=document.getElementById("gerr");
+  if(left>0){if(i)i.disabled=true;if(b)b.disabled=true;if(e)e.textContent="Trop de codes incorrects sur cet appareil. Réessayez dans "+Math.ceil(left/60000)+" min.";return true}
+  if(i)i.disabled=false;if(b)b.disabled=false;return false}
+function startLockCountdown(){if(lockTicker)clearInterval(lockTicker);showDeviceLock();lockTicker=setInterval(function(){if(!showDeviceLock()){clearInterval(lockTicker);lockTicker=null;var e=document.getElementById("gerr");if(e)e.textContent="Vous pouvez réessayer."}},1000)}
+function tryCode(){var i=document.getElementById("gcode"),c=i.value.trim().toUpperCase(),g=CODES.hasOwnProperty(c)?CODES[c]:undefined;
+  if(lockRemaining()>0){showDeviceLock();return}
+  if(!ready){document.getElementById("gerr").textContent="Chargement…";return}
+  if(g===undefined){badCode(i);return}
+  memoryFails=0;memoryLockUntil=0;try{localStorage.removeItem(FAIL_KEY);localStorage.removeItem(LOCK_KEY)}catch(e){}
+  if(lockTicker){clearInterval(lockTicker);lockTicker=null}
+  ACC=g;setAcc();i.value="";document.getElementById("gerr").textContent="";applyAcc()}
+function loadCodes(){var done=function(){if(ready)return;ready=true;loadAcc();applyAcc()};
+  try{
+    var saved=localStorage.getItem("controle-securite-codes");
+    if(saved){var local=JSON.parse(saved);if(local&&local.g&&local.a&&local.v){mk(local);CSRC="codes enregistrés sur cet appareil";done();return}}
+  }catch(e){}
+  try{fetch("codes.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.g&&j.a&&j.v&&/^[A-Z]{4}$/.test(String(j.a[0]))){mk(j);CSRC="fichier enregistré"}}).catch(function(){}).then(done)}catch(e){done()}
+  setTimeout(done,4000)}
+function rnd(used){var c;do{c=String(1000+crypto.getRandomValues(new Uint32Array(1))[0]%9000)}while(used.indexOf(c)>=0);used.push(c);return c}
+function openCodesOld(){var r=document.getElementById("rep");
+  var rows=Object.keys(CFG.g).map(function(n){return '<tr><td>'+esc(n)+'</td><td><input class="ci" data-cg="'+esc(n)+'" readonly value="'+esc(CFG.g[n])+'" maxlength="4" inputmode="numeric" style="width:90px"></td></tr>'}).join("")+CFG.a.map(function(x,i){return '<tr><td>Responsable de site '+(i+1)+'</td><td><input class="ci" data-ca="'+i+'" readonly value="'+esc(x)+'" maxlength="4" style="width:90px;text-transform:uppercase"></td></tr>'}).join("");
+  r.innerHTML='<div class="rbar"><button class="b p" id="cSave">Changement de code</button><button class="b" id="cClose">Fermer</button></div><h2>Codes d’accès</h2><p class="hint" id="cMsg" style="font-size:14px;color:#000">Source des codes : '+CSRC+'. Appuie sur « Changement de code » pour modifier les codes. Un code à 4 chiffres par gardien. Chaque responsable de secteur a un code de 4 lettres qui ouvre tout.</p><table>'+rows+'</table>';
+  r.hidden=false;r.scrollTop=0;
+  document.getElementById("cClose").onclick=function(){r.hidden=true};
+  document.getElementById("cSave").onclick=function(){if(this.dataset.e!=="1"){this.dataset.e="1";this.textContent="Enregistrer les codes";var l=document.querySelectorAll("#rep .ci");l.forEach(function(el){el.readOnly=false;el.onfocus=function(){var t=this;setTimeout(function(){t.select()},0)}});if(l[0])l[0].focus();document.getElementById("cMsg").textContent="Tape les nouveaux codes, puis appuie sur « Enregistrer les codes »."}else saveCodes()}}
+function resetCodes(){var b=document.getElementById("cReset");if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent="Confirmer : nouveaux codes";document.getElementById("cMsg").textContent="Les anciens codes ne fonctionneront plus. Appuie une seconde fois pour confirmer.";return}
+  var u=[],j={v:String(Date.now()),g:{},a:[]};Object.keys(CFG.g).forEach(function(n){j.g[n]=rnd(u)});for(var k=0;k<3;k++)j.a.push(rndL(u));
+  var m=document.getElementById("cMsg");m.textContent="Enregistrement…";
+  claude.use("artifact").then(function(art){if(!art)throw 0;return art.publish({"codes.json":{content:JSON.stringify(j),contentType:"application/json"}})}).then(function(){mk(j);ACC="*";setAcc();openCodes();document.getElementById("cMsg").textContent="Nouveaux codes enregistrés. Transmets-les aux gardiens et aux responsables de secteur."}).catch(function(e){m.textContent="Impossible d’enregistrer ici (erreur : "+((e&&e.code)||"inconnue")+"). Donne-moi les codes voulus dans le chat et je les applique."})}
+function badCode(i){var e=document.getElementById("gerr");if(i)i.value="";
+  var n=readFailCount()+1;memoryFails=n;
+  try{localStorage.setItem(FAIL_KEY,String(n))}catch(x){}
+  if(n>=3){memoryLockUntil=Date.now()+15*60*1000;try{localStorage.setItem(LOCK_KEY,String(memoryLockUntil))}catch(x){};showDeviceLock();startLockCountdown();return}
+  if(e)e.textContent="Code incorrect. Il vous reste "+(3-n)+" tentative(s) avant le blocage de 15 minutes."}
+function rndL(used){var L="ABCDEFGHJKLMNPQRSTUVWXYZ",c;do{c=Array.prototype.map.call(crypto.getRandomValues(new Uint32Array(4)),function(x){return L[x%L.length]}).join("")}while(used.indexOf(c)>=0);used.push(c);return c}
+function saveCodes(){var j={v:String(Date.now()),g:{},a:[]},all=[],bad="",m=document.getElementById("cMsg");
+  document.querySelectorAll("#rep .ci").forEach(function(el){var v=el.value.trim().toUpperCase();
+    if(el.dataset.cg!==undefined){if(!/^\d{4}$/.test(v))bad="Les codes des gardiens doivent avoir 4 chiffres.";j.g[el.dataset.cg]=v}
+    else{if(!/^[A-Z]{4}$/.test(v))bad="Les codes des responsables doivent avoir 4 lettres.";j.a[+el.dataset.ca]=v}
+    all.push(v)});
+  if(!bad&&all.some(function(x,i){return all.indexOf(x)!==i}))bad="Deux codes sont identiques.";
+  if(bad){m.textContent=bad;return}
+  m.textContent="Enregistrement…";
+  claude.use("artifact").then(function(art){if(!art)throw 0;return art.publish({"codes.json":{content:JSON.stringify(j),contentType:"application/json"}})}).then(function(){mk(j);ACC="*";setAcc();openCodes();document.getElementById("cMsg").textContent="Codes enregistrés. Transmets-les aux personnes concernées."}).catch(function(e){m.textContent="Impossible d’enregistrer ici (erreur : "+((e&&e.code)||"inconnue")+"). Donne-moi les codes voulus dans le chat et je les applique."})}
+function sendPdf(){withPhotos(function(){sendPdf2()})}
+function sendPdf2(){var doc=makePdf();if(!doc){toast("PDF indisponible");return}
+  var name="controle-securite-"+S.date+".pdf",blob=new Blob([doc.output("arraybuffer")],{type:"application/pdf"}),file=null;
+  try{file=new File([blob],name,{type:"application/pdf"})}catch(e){}
+  var fb2=function(){if(DL){DL.save({filename:name,data:blob}).then(function(){toast("PDF enregistré : joins-le à un mail ou un message")},function(){toast("Envoi impossible")})}else{try{navigator.clipboard.writeText(repText()).then(function(){toast("Rapport copié : colle-le dans un message")},function(){toast("Envoi impossible")})}catch(e){toast("Envoi impossible")}}};
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:"Contrôle sécurité"}).catch(function(e){if(!(e&&e.name==="AbortError"))fb2()})}else fb2()}
+function askText(title,label,cb){var r=document.getElementById("rep");
+  r.innerHTML='<div class="rbar"><button class="b" id="qNo">Annuler</button></div><h2>'+esc(title)+'</h2><label style="color:#000">'+esc(label)+'</label><input id="qIn" style="font-size:18px"><p id="qMsg" style="color:#c00"></p><button class="b p" id="qOk">Valider</button>';
+  r.hidden=false;r.scrollTop=0;var i=document.getElementById("qIn");i.focus();
+  document.getElementById("qNo").onclick=function(){r.hidden=true};
+  document.getElementById("qOk").onclick=function(){var v=i.value.trim();if(!v){document.getElementById("qMsg").textContent="Saisis un texte.";return}r.hidden=true;cb(v)}}
+function askYes(msg,cb){var r=document.getElementById("rep");
+  r.innerHTML='<div class="rbar"><button class="b p" id="qOk">Oui</button><button class="b" id="qNo">Non</button></div><h2>'+esc(msg)+'</h2>';r.hidden=false;r.scrollTop=0;
+  document.getElementById("qNo").onclick=function(){r.hidden=true};document.getElementById("qOk").onclick=function(){r.hidden=true;cb()}}
+function syncFloorFlagsFromControls(){
+  // Les réglages sont pilotés uniquement depuis la rubrique de gestion.
+  // Aucun contrôle ni affichage ne peut réactiver automatiquement un étage.
+  S.floorAnomalies=S.floorAnomalies||{};
+  S.noFloorAnomalies=S.noFloorAnomalies||{};
+  Object.keys(S.removedAnomalies||{}).forEach(function(p){
+    S.floorAnomalies[p]=(S.floorAnomalies[p]||[]).filter(function(a){return (S.removedAnomalies[p]||[]).indexOf(a)<0;});
+  });
+}
+
+function openAddPt(){
+  syncFloorFlagsFromControls();
+  save();
+  var r=document.getElementById("rep");
+  var catalog=PO.concat((S.customPoints||[]),S.points.filter(function(p){return PO.indexOf(p)<0})).filter(function(p,i,a){return a.indexOf(p)===i});
+  S.pointCatalogOrder=Array.isArray(S.pointCatalogOrder)?S.pointCatalogOrder:[];
+  catalog.sort(function(a,b){var ia=S.pointCatalogOrder.indexOf(a),ib=S.pointCatalogOrder.indexOf(b);if(ia<0)ia=9999;if(ib<0)ib=9999;return ia-ib||PO.indexOf(a)-PO.indexOf(b)||a.localeCompare(b,"fr")});
+  var items=catalog.map(function(p){
+    var anomalies=(ANO[p]||[]).concat((S.customAnomalies&&S.customAnomalies[p])||[]),removed=(S.removedAnomalies&&S.removedAnomalies[p])||[];
+    anomalies=anomalies.filter(function(a){return removed.indexOf(a)<0});
+    return '<section style="padding:10px 0;border-bottom:1px solid #ddd"><div style="display:flex;align-items:center;gap:8px"><b>'+String(catalog.indexOf(p)+1)+'. '+esc(pointLabel(p))+'</b><span style="margin-left:auto;display:flex;gap:4px"><button class="b" data-order-point="'+esc(p)+'" data-direction="up" title="Monter" '+(catalog.indexOf(p)===0?'disabled':'')+'>↑</button><button class="b" data-order-point="'+esc(p)+'" data-direction="down" title="Descendre" '+(catalog.indexOf(p)===catalog.length-1?'disabled':'')+'>↓</button></span></div><div style="font-size:13px;color:#555;margin-top:5px">Anomalies : '+(anomalies.length?anomalies.map(function(a){return '<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 5px 2px 0">'+esc(a)+' <button class="b" style="width:30px;height:30px;padding:0;border-radius:50%;font-size:15px;border:1px solid #d5d9e2;color:#3976b8;background:#fff" data-remove-anomaly="'+esc(p)+'" data-anomaly="'+esc(a)+'" title="Retirer cette anomalie">−</button> <button class="b" style="width:30px;height:30px;padding:0;border-radius:50%;font-size:13px;font-weight:bold;border:1px solid #d5d9e2;color:'+((S.floorAnomalies&&S.floorAnomalies[p]&&S.floorAnomalies[p].indexOf(a)>=0)?'#3976b8':'#8b929b')+';background:'+((S.floorAnomalies&&S.floorAnomalies[p]&&S.floorAnomalies[p].indexOf(a)>=0)?'#d9efff':'#fff')+'" data-floor-toggle="'+esc(p)+'" data-anomaly="'+esc(a)+'" title="Activer ou désactiver la saisie des étages">e</button></span>'}).join(''):'Aucune anomalie')+'</div>'+(S.points.indexOf(p)>=0?'<span class="hint">Point déjà présent dans le contrôle</span> <button class="b" style="margin-top:7px" data-remove-point-name="'+esc(p)+'">Retirer le point</button>':'<button class="b" style="margin-top:7px" data-add-point="'+esc(p)+'">Ajouter ce point</button>')+' <button class="b" style="margin-top:7px" data-add-anomaly="'+esc(p)+'">+ Ajouter une anomalie</button></section>';
+  }).join("");
+  r.innerHTML='<div class="rbar"><button class="b" id="closeAddPt">Fermer</button><button class="b" id="customAddPt">+ Créer un point personnalisé</button></div><h2>Points de contrôle et anomalies</h2><p class="hint">Ajoutez un point de contrôle ou une anomalie personnalisée à un point existant.</p>'+items;
+  r.hidden=false;r.scrollTop=0;
+  document.getElementById("closeAddPt").onclick=function(){r.hidden=true};
+  document.getElementById("customAddPt").onclick=function(){r.hidden=true;askText("Nouveau point de contrôle","Nom du point",function(n){n=n.trim();if(!n||S.points.indexOf(n)>=0){toast("Ce point existe déjà");return}S.customPoints=S.customPoints||[];if(S.customPoints.indexOf(n)<0)S.customPoints.push(n);S.points.push(n);save();render();openAddPt();toast("Point ajouté et enregistré")})};
+  r.querySelectorAll("[data-order-point]").forEach(function(b){b.onclick=function(){var name=b.getAttribute("data-order-point"),dir=b.getAttribute("data-direction"),arr=PO.concat((S.customPoints||[]),S.points.filter(function(p){return PO.indexOf(p)<0})).filter(function(p,i,a){return a.indexOf(p)===i});S.pointCatalogOrder=S.pointCatalogOrder||arr.slice();arr.sort(function(a,b){var ia=S.pointCatalogOrder.indexOf(a),ib=S.pointCatalogOrder.indexOf(b);if(ia<0)ia=9999;if(ib<0)ib=9999;return ia-ib||PO.indexOf(a)-PO.indexOf(b)||a.localeCompare(b,"fr")});var i=arr.indexOf(name),j=dir==="up"?i-1:i+1;if(j<0||j>=arr.length)return;var tmp=arr[i];arr[i]=arr[j];arr[j]=tmp;S.pointCatalogOrder=arr;save();openAddPt()}});
+  r.querySelectorAll("[data-add-point]").forEach(function(b){b.onclick=function(){var n=b.getAttribute("data-add-point");if(S.points.indexOf(n)>=0)return;S.points.push(n);save();render();openAddPt();toast("Point ajouté")}});
+  r.querySelectorAll("[data-remove-point-name]").forEach(function(b){b.onclick=function(){var name=b.getAttribute("data-remove-point-name");askYes('Retirer le point « '+pointLabel(name)+' » de toutes les adresses ?',function(){var idx=S.points.indexOf(name);if(idx>=0)S.points.splice(idx,1);S.customPoints=(S.customPoints||[]).filter(function(p){return p!==name});S.adresses.forEach(function(a){["st","an","et","dt","ph"].forEach(function(k){if(a[k])delete a[k][name]})});save();render();openAddPt();toast("Point de contrôle retiré")})}});
+  r.querySelectorAll("button[data-add-anomaly]").forEach(function(b){
+    b.addEventListener("click",function(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      var p=this.getAttribute("data-add-anomaly");
+      if(!p){toast("Point de contrôle introuvable");return;}
+      askText("Nouvelle anomalie — "+p,"Nom de l’anomalie",function(n){
+        n=String(n||"").trim(); if(!n)return;
+        S.customAnomalies=S.customAnomalies||{};
+        S.customAnomalies[p]=S.customAnomalies[p]||[];
+        if(S.customAnomalies[p].some(function(x){return String(x).toLocaleLowerCase("fr")===n.toLocaleLowerCase("fr")})){
+          toast("Cette anomalie existe déjà");openAddPt();return;
+        }
+        S.customAnomalies[p].push(n);
+        // Une anomalie créée manuellement n'active jamais les étages automatiquement.
+        S.floorAnomalies=S.floorAnomalies||{};
+        S.floorAnomalies[p]=(S.floorAnomalies[p]||[]).filter(function(x){return x!==n;});
+        S.noFloorAnomalies=S.noFloorAnomalies||{};
+        S.noFloorAnomalies[p]=(S.noFloorAnomalies[p]||[]).filter(function(x){return x!==n;});
+        save(); render(); openAddPt(); toast("Anomalie ajoutée et enregistrée");
+      });
+    },{once:true});
+  });
+  r.querySelectorAll("[data-floor-toggle]").forEach(function(b){b.onclick=function(){var p=b.getAttribute("data-floor-toggle"),a=b.getAttribute("data-anomaly");S.floorAnomalies=S.floorAnomalies||{};S.floorAnomalies[p]=S.floorAnomalies[p]||[];var ix=S.floorAnomalies[p].indexOf(a);S.noFloorAnomalies=S.noFloorAnomalies||{};S.noFloorAnomalies[p]=S.noFloorAnomalies[p]||[];if(ix>=0){S.floorAnomalies[p].splice(ix,1);if(S.noFloorAnomalies[p].indexOf(a)<0)S.noFloorAnomalies[p].push(a)}else{S.floorAnomalies[p].push(a);S.noFloorAnomalies[p]=S.noFloorAnomalies[p].filter(function(x){return x!==a})}save();render();openAddPt();toast(ix>=0?"Saisie des étages désactivée":"Saisie des étages activée")}});
+  r.querySelectorAll("[data-remove-anomaly]").forEach(function(b){b.onclick=function(){var p=b.getAttribute("data-remove-anomaly"),a=b.getAttribute("data-anomaly");askYes("Retirer l’anomalie « "+a+" » du point « "+pointLabel(p)+" » ?",function(){S.removedAnomalies=S.removedAnomalies||{};S.removedAnomalies[p]=S.removedAnomalies[p]||[];if(S.removedAnomalies[p].indexOf(a)<0)S.removedAnomalies[p].push(a);S.floorAnomalies=S.floorAnomalies||{};S.floorAnomalies[p]=(S.floorAnomalies[p]||[]).filter(function(x){return x!==a});S.adresses.forEach(function(ad){if(ad.an&&ad.an[p])ad.an[p]=ad.an[p].filter(function(x){return x!==a})});save();render();openAddPt();toast("Anomalie retirée")})}});
+}
+function openRemovePt(){
+  var r=document.getElementById("rep");
+  function draw(){
+    var items=S.points.map(function(p,i){return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #ddd"><span>'+esc(pointLabel(p))+'</span><button class="b" data-remove-point="'+i+'">Retirer</button></div>'}).join("");
+    r.innerHTML='<div class="rbar"><button class="b" id="closeRemovePt">Fermer</button></div><h2>Point de contrôle</h2><p class="hint">Liste complète des points actuellement utilisés. Le retrait supprime ce point de toutes les adresses et des prochains rapports. Les autres points restent inchangés.</p><div>'+items+'</div>';
+    r.hidden=false;r.scrollTop=0;
+    document.getElementById("closeRemovePt").onclick=function(){r.hidden=true};
+    r.querySelectorAll("[data-remove-point]").forEach(function(b){b.onclick=function(){
+      var idx=Number(b.getAttribute("data-remove-point")),name=S.points[idx];
+      askYes('Retirer le point « '+pointLabel(name)+' » de toutes les adresses ?',function(){
+        S.points.splice(idx,1);
+        S.adresses.forEach(function(a){["st","an","et","dt","ph"].forEach(function(k){if(a[k])delete a[k][name]})});
+        save();render();draw();toast("Point de contrôle retiré");
+      });
+    }});
+  }
+  draw();
+}
+function openAddAd(){var r=document.getElementById("rep");
+  r.innerHTML='<div class="rbar"><button class="b" id="fNo">Annuler</button></div><h2>Nouvelle adresse</h2><label style="color:#000">Adresse (ex. 12 Rue Gounod)</label><input id="fNom" style="font-size:18px"><label style="color:#000">Gardien</label><select id="fG" style="font-size:18px">'+G.map(function(g){return '<option'+(g[0]===S.gardien?' selected':'')+'>'+esc(g[0])+'</option>'}).join("")+'</select><label style="color:#000"><input type="checkbox" id="fAsc" style="width:auto"> Plus de 4 étages (ascenseur, colonne sèche, BAES, porte coupe-feu)</label><p id="fMsg" style="color:#c00"></p><button class="b p" id="fOk">Ajouter</button>';
+  r.hidden=false;r.scrollTop=0;document.getElementById("fNom").focus();
+  document.getElementById("fNo").onclick=function(){r.hidden=true};
+  document.getElementById("fOk").onclick=function(){var n=document.getElementById("fNom").value.trim();if(!n){document.getElementById("fMsg").textContent="Saisis l’adresse.";return}
+    S.adresses.push({nom:n,g:document.getElementById("fG").value,asc:document.getElementById("fAsc").checked,st:{},com:""});save();render();r.hidden=true;toast("Adresse ajoutée")}}
+function pubCodes(j,msg){
+  var m=document.getElementById("cMsg"),previousAcc=ACC;
+  try{
+    j.v=String(Date.now());
+    localStorage.setItem("controle-securite-codes",JSON.stringify(j));
+    mk(j);ACC=previousAcc;setAcc();openCodes();
+    document.getElementById("cMsg").textContent=msg+" Modifications enregistrées sur cet appareil.";
+  }catch(e){
+    m.textContent="Le navigateur bloque l’enregistrement local. Ouvre l’application dans Chrome et autorise le stockage du site.";
+  }
+}
+function openCodes(){var r=document.getElementById("rep"),full=ACC==="*";
+  var rows=Object.keys(CFG.g).map(function(n){return '<tr><td>'+esc(n)+'</td><td><b>'+esc(CFG.g[n])+'</b></td><td><button class="b" data-ed="g" data-k="'+esc(n)+'">Modifier</button></td></tr>'}).join("")+(full?CFG.a.map(function(x,i){return '<tr><td>Responsable de site '+(i+1)+'</td><td><b>'+esc(x)+'</b></td><td><button class="b" data-ed="a" data-k="'+i+'">Modifier</button></td></tr>'}).join(""):'');
+  r.innerHTML='<div class="rbar"><button class="b" id="cClose">Fermer</button></div><h2>Codes d’accès</h2><p class="hint" id="cMsg" style="font-size:14px;color:#000">Source des codes : '+CSRC+'. Vous pouvez modifier les codes des gardiens. Seul le responsable du site 1 peut modifier les codes des responsables. Gardiens : 4 chiffres. Responsables : 4 lettres. Les modifications sont conservées sur cet appareil.</p><div id="cEd"></div><table id="cTab">'+rows+'</table>';
+  r.hidden=false;r.scrollTop=0;
+  document.getElementById("cClose").onclick=function(){r.hidden=true};
+  document.getElementById("cTab").onclick=function(e){var b=e.target;if(!b.dataset.ed)return;var isG=b.dataset.ed==="g",k=b.dataset.k;if(!isG&&ACC!=="*")return;var cur=isG?CFG.g[k]:CFG.a[+k],lab=isG?k:"Responsable de site "+(+k+1);
+    document.getElementById("cEd").innerHTML='<div style="border:1px solid #1f5fbf;border-radius:8px;padding:10px;margin:8px 0"><b>'+esc(lab)+'</b><br>Nouveau code ('+(isG?"4 chiffres":"4 lettres")+') :<br><input id="cNew" maxlength="4" placeholder="'+esc(cur)+'" style="width:120px;font-size:20px;text-transform:uppercase;margin:6px 0"'+(isG?' inputmode="numeric"':'')+'><br><button class="b p" id="cOk">Enregistrer</button> <button class="b" id="cNo">Annuler</button></div>';
+    var inp=document.getElementById("cNew");inp.focus();
+    document.getElementById("cNo").onclick=function(){document.getElementById("cEd").innerHTML=""};
+    document.getElementById("cOk").onclick=function(){var v=inp.value.trim().toUpperCase(),m=document.getElementById("cMsg");
+      if(isG?!/^\d{4}$/.test(v):!/^[A-Z]{4}$/.test(v)){m.textContent=isG?"Le code d’un gardien doit avoir 4 chiffres.":"Le code d’un responsable doit avoir 4 lettres.";return}
+      var j={v:String(Date.now()),g:{},a:CFG.a.slice()};Object.keys(CFG.g).forEach(function(n){j.g[n]=CFG.g[n]});
+      if(isG)j.g[k]=v;else j.a[+k]=v;
+      var all=Object.keys(j.g).map(function(n){return j.g[n]}).concat(j.a);
+      if(all.some(function(x,i){return all.indexOf(x)!==i})){m.textContent="Ce code est déjà utilisé par un autre compte.";return}
+      pubCodes(j,"Code enregistré pour "+lab+". Transmets-le à la personne concernée.")}}}
+var PM=null,PHT=null,PDB=null;
+function pdb(){return PDB||(PDB=new Promise(function(res,rej){var q=indexedDB.open("cs-photos",1);q.onupgradeneeded=function(){q.result.createObjectStore("p",{keyPath:"id"})};q.onsuccess=function(){res(q.result)};q.onerror=function(){rej(q.error)}}))}
+function phPut(id,d){return pdb().then(function(db){return new Promise(function(res,rej){var t=db.transaction("p","readwrite");t.objectStore("p").put({id:id,d:d});t.oncomplete=res;t.onerror=function(){rej(t.error)}})})}
+function phGet(id){return pdb().then(function(db){return new Promise(function(res){var q=db.transaction("p").objectStore("p").get(id);q.onsuccess=function(){res(q.result&&q.result.d)};q.onerror=function(){res(null)}})}).catch(function(){return null})}
+function phDel(id){return pdb().then(function(db){db.transaction("p","readwrite").objectStore("p").delete(id)}).catch(function(){})}
+function resizeImg(file,max,q){return new Promise(function(res,rej){var u=URL.createObjectURL(file),im=new Image();im.onload=function(){var s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res({d:c.toDataURL("image/jpeg",q),w:c.width,h:c.height})};im.onerror=function(){rej()};im.src=u})}
+function phRow(a,i,j,p,x){var L=(a.ph&&a.ph[p]&&a.ph[p][x])||[];return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:0 0 8px"><label class="chip add" style="cursor:pointer;display:inline-block;margin:0">\ud83d\udcf7 Photo ('+esc(x)+')<input type="file" accept="image/*" capture="environment" data-pf="'+i+'" data-p="'+esc(p)+'" data-lb="'+esc(x)+'" style="display:none"></label>'+L.map(function(m){return '<span style="position:relative"><img src="'+m.t+'" style="height:44px;border-radius:6px;border:1px solid var(--bd)"><button class="x" data-pd="'+i+'" data-p="'+esc(p)+'" data-lb="'+esc(x)+'" data-id="'+m.id+'" style="position:absolute;top:-8px;right:-6px;background:var(--card);border-radius:10px;font-size:14px;padding:0 5px">×</button></span>'}).join("")+'</div>'}
+document.getElementById("list").addEventListener("change",function(e){var inp=e.target;if(inp.dataset.pf===undefined)return;var f=inp.files[0];if(!f)return;PHT={i:+inp.dataset.pf,p:inp.dataset.p,lb:inp.dataset.lb};phAdd(f,PHT)});
+function phAdd(f,t){
+  Promise.all([resizeImg(f,1000,.7),resizeImg(f,90,.6)]).then(function(r){var id="p"+Date.now()+Math.floor(Math.random()*1e4);return phPut(id,r[0].d).then(function(){var a=S.adresses[t.i];a.ph=a.ph||{};a.ph[t.p]=a.ph[t.p]||{};(a.ph[t.p][t.lb]=a.ph[t.p][t.lb]||[]).push({id:id,t:r[1].d,w:r[0].w,h:r[0].h});save();render();toast("Photo ajoutée")})}).catch(function(){toast("Photo non enregistrée")})};
+function loadPM(){PM={};var ids=[];S.adresses.forEach(function(a){if(S.gardien&&a.g!==S.gardien)return;Object.keys(a.ph||{}).forEach(function(p){Object.keys(a.ph[p]).forEach(function(l){a.ph[p][l].forEach(function(m){ids.push(m.id)})})})});return Promise.all(ids.map(function(id){return phGet(id).then(function(d){PM[id]=d})}))}
+function withPhotos(cb){var c=document.getElementById("rPh"),c0=document.getElementById("rPh0");if(!((c&&c.checked)||(c0&&c0.checked))){PM=null;cb();return}loadPM().then(function(){cb()})}
+function openRep(){var r=document.getElementById("rep");
+  r.innerHTML='<div class="rbar"><button class="b p" id="rPrint">Imprimer</button><button class="b" id="rSave" hidden>Enregistrer en PDF</button><button class="b" id="rClose">Fermer</button></div><label class="hint" style="display:flex;gap:6px;align-items:center;margin-bottom:8px"><input type="checkbox" id="rPh" style="width:auto"> Inclure les photos dans le PDF</label><div>'+rep()+'</div><p class="hint">Si l’impression ne démarre pas, utilise « Enregistrer en PDF », puis imprime-le depuis ton appareil.</p>';
+  r.hidden=false;r.scrollTop=0;
+  document.getElementById("rClose").onclick=function(){r.hidden=true;document.body.classList.remove("printing");if(SAVED){S=SAVED;SAVED=null}};
+  document.getElementById("rPrint").onclick=function(){document.body.classList.add("printing");try{window.print()}catch(e){document.body.classList.remove("printing")}};
+  var sv=document.getElementById("rSave");
+  sv.onclick=function(){if(!DL)return;var html='<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Contrôle sécurité</title><style>body{font:14px/1.4 system-ui,sans-serif;margin:16px;color:#000}'+css("")+'</style></head><body>'+rep()+'</body></html>';
+    DL.save({filename:"controle-securite-"+S.date+".html",data:new Blob([html],{type:"text/html"})}).catch(function(){})};
+  sv.onclick=function(){savePdf()};
+  try{if(window.claude&&claude.use)claude.use("downloads").then(function(d){DL=d;sv.hidden=!d},function(){})}catch(e){}
+}
+document.getElementById("print").onclick=openRep;
+document.getElementById("admBtn").onclick=openAdm;
+document.getElementById("gok").onclick=tryCode;
+startLockCountdown();
+document.getElementById("gcode").addEventListener("keydown",function(e){if(e.key==="Enter")tryCode()});
+document.getElementById("lock").onclick=function(){ACC=null;setAcc();document.getElementById("gardien").disabled=false;applyAcc()};
+initCloud();
+document.getElementById("codesBtn").onclick=openCodes;
+document.getElementById("manageBtn").onclick=openManage;
+document.getElementById("historyBtn").onclick=openHistory;
+loadCodes();
+function repText(){
+  var t="CONTRÔLE SÉCURITÉ – Secteur "+S.secteur+"\nGardien : "+(S.gardien||"—")+"\nDate : "+S.date.split("-").reverse().join("/")+"\n";
+  S.adresses.forEach(function(a){
+    if(S.gardien&&a.g!==S.gardien)return;t+="\n"+a.nom+"\n";
+    orderedPoints().forEach(function(p){if((p==="Ascenseurs"||p==="BAES"||p==="Colonnes sèches"||p==="Porte coupe-feu")&&!a.asc)return;var v=ev(a,p),exl="",an=(a.an&&a.an[p]&&v==="ko")?a.an[p].map(function(l){var f=a.et&&a.et[p]&&a.et[p][l];return sublab(a,p,l)+(f?" (étage "+f+")":"")}).join(", "):"";t+="  • "+pointLabel(p)+" : "+LAB[v]+((an||exl)?" ("+[exl,an].filter(Boolean).join(", ")+")":"")+(a.dt&&a.dt[p]?" – dernier entretien : "+a.dt[p].split("-").reverse().join("/"):"")+"\n"});
+    if(a.com.trim())t+="  Commentaires : "+a.com.trim().replace(/\n/g," ; ")+"\n";
+  });
+  return t
+}
+document.getElementById("copy").onclick=function(){var t=repText();try{navigator.clipboard.writeText(t).then(function(){toast("Rapport copié")},function(){fb(t)})}catch(e){fb(t)}};
+document.getElementById("send").onclick=sendPdf;
+function fb(t){var x=document.createElement("textarea");x.value=t;document.body.appendChild(x);x.select();try{document.execCommand("copy");toast("Rapport copié")}catch(e){toast("Copie impossible")}x.remove()}
+render();
+
+</script></body></html>
