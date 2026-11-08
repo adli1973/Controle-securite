@@ -156,7 +156,9 @@ try{
   }
 }catch(e){}
 // La liste active des gardiens est conservée dans les données locales.
-if(Array.isArray(S.gardienNames)){var savedNames=S.gardienNames;G=G.filter(function(g){return savedNames.indexOf(g[0])>=0});savedNames.forEach(function(n){if(!G.some(function(g){return g[0]===n}))G.push([n])})}
+if(Array.isArray(S.gardienNames)&&S.gardienNames.length){var savedNames=S.gardienNames;G=G.filter(function(g){return savedNames.indexOf(g[0])>=0});savedNames.forEach(function(n){if(!G.some(function(g){return g[0]===n}))G.push([n])})}
+// Si une ancienne sauvegarde contient une liste vide, restaurer les gardiens de référence.
+if(!Array.isArray(S.gardienNames)||S.gardienNames.length===0){S.gardienNames=G.map(function(g){return g[0]})}
 S.customAnomalies=S.customAnomalies||{};
 S.floorAnomalies=S.floorAnomalies||{};
 S.noFloorAnomalies=S.noFloorAnomalies||{};
