@@ -272,6 +272,20 @@ function orderedPoints(){var order=Array.isArray(S.pointCatalogOrder)?S.pointCat
   }catch(e){}
 })();
 
+// À chaque ouverture, démarrer un contrôle neuf : aucune ancienne anomalie,
+// aucun ancien statut ni commentaire ne doit réapparaître dans le contrôle courant.
+// Les référentiels (gardiens, adresses, points et réglages d’anomalies) ainsi que
+// l’historique des contrôles sont conservés séparément.
+(function(){
+  var oldGuard=S.gardien;
+  var oldHistory=Array.isArray(S.history)?S.history:[];
+  var freshAddresses=build();
+  S.adresses=freshAddresses;
+  S.date=new Date().toISOString().slice(0,10);
+  S.gardien=(G.some(function(g){return g[0]===oldGuard}))?oldGuard:(G[0]&&G[0][0]||"");
+  S.history=oldHistory;
+})();
+
 // Sauvegarde les réglages personnalisés et les suppressions après les migrations.
 try{
   localStorage.setItem(KEY,JSON.stringify(S));
