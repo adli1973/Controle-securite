@@ -151,14 +151,13 @@ try{
   var managerConfig=JSON.parse(localStorage.getItem(MANAGER_CONFIG_KEY)||"null");
   if(managerConfig){
     ["points","customPoints","customAnomalies","removedAnomalies","floorAnomalies","noFloorAnomalies","gardienNames","floorConfigVersion","pointCatalogOrder"].forEach(function(k){
-      if(managerConfig[k]!==undefined)S[k]=managerConfig[k];
+      // Une ancienne sauvegarde vide ne doit jamais effacer les gardiens de référence.
+      if(managerConfig[k]!==undefined && !(k==="gardienNames" && Array.isArray(managerConfig[k]) && managerConfig[k].length===0)) S[k]=managerConfig[k];
     });
   }
 }catch(e){}
 // La liste active des gardiens est conservée dans les données locales.
-if(Array.isArray(S.gardienNames)&&S.gardienNames.length){var savedNames=S.gardienNames;G=G.filter(function(g){return savedNames.indexOf(g[0])>=0});savedNames.forEach(function(n){if(!G.some(function(g){return g[0]===n}))G.push([n])})}
-// Si une ancienne sauvegarde contient une liste vide, restaurer les gardiens de référence.
-if(!Array.isArray(S.gardienNames)||S.gardienNames.length===0){S.gardienNames=G.map(function(g){return g[0]})}
+if(Array.isArray(S.gardienNames) && S.gardienNames.length){var savedNames=S.gardienNames;G=G.filter(function(g){return savedNames.indexOf(g[0])>=0});savedNames.forEach(function(n){if(!G.some(function(g){return g[0]===n}))G.push([n])})}else{S.gardienNames=G.map(function(g){return g[0]});}
 S.customAnomalies=S.customAnomalies||{};
 S.floorAnomalies=S.floorAnomalies||{};
 S.noFloorAnomalies=S.noFloorAnomalies||{};
